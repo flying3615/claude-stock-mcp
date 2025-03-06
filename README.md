@@ -5,9 +5,8 @@
 ## 功能特点
 
 - 完全兼容 Claude Desktop 的 MCP 接口
-- 提供两个主要工具:
+- 提供一个主要工具:
   - `get-stock-analysis`: 开始分析特定股票
-  - `check-analysis-status`: 查询分析状态和结果
 - 集成了全面的股票分析功能
 - 生成详细的交易计划报告
 
@@ -85,16 +84,7 @@
 - "我想了解特斯拉股票（TSLA）的交易信号"
 - "帮我分析 NVDA 的入场时机和止损位"
 
-Claude 将使用 `get-stock-analysis` 工具开始分析，并返回一个任务 ID。
-
-### 查询分析状态
-
-示例问题:
-- "请查询之前分析的状态"
-- "分析完成了吗？"
-- "查看任务 [任务ID] 的状态"
-
-Claude 将使用 `check-analysis-status` 工具获取分析结果。如果分析已完成，它会提供交易计划摘要。
+Claude 将使用 `get-stock-analysis` 工具开始分析
 
 ## 开发测试
 
@@ -119,13 +109,11 @@ claude-stock-mcp/
 ├── index.ts    # MCP 服务器主文件
 ├── src/
 │   ├── analysis/              # 股票分析相关代码
-│   │   ├── FormatTradePlan.ts
 │   │   ├── IntegratedAnalysis.ts
-│   │   ├── SaveTradePlanToHTML.ts
+│   │   ├── IntegratedAnalysisTypes.ts
 │   │   └── ...
 │   └── util/                  # 工具函数
 ├── dist/                      # 编译输出
-├── trading-reports/           # 分析报告保存目录
 ├── package.json
 └── tsconfig.json
 ```
