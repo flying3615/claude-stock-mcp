@@ -64,7 +64,10 @@
    {
      "mcpServers": {
        "stock-analysis": {
-         "command": "node /Users/你的用户名/Documents/git/claude-stock-mcp/dist/stock-analysis-server.js"
+       "command": "node",
+       "args": [
+         "path/to/dist/index.js"
+        ]
        }
      }
    }
