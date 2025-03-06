@@ -1,4 +1,4 @@
-# Claude 股票分析 MCP 服务器
+# 股票分析 MCP 服务器
 
 这是一个基于 Model Context Protocol (MCP) 的服务器，为 Claude Desktop 提供股票分析工具。该服务器集成了现有的股票分析功能，包括筹码分析、形态分析和趋势反转检测。
 
