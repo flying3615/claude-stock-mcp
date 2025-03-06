@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "stock-analysis": {
+      "command": "node /Users/yufei/Documents/git/claude-stock-mcp/dist/index.js"
+    }
+  }
+}

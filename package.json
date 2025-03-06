@@ -1,0 +1,46 @@
+{
+  "name": "claude-stock-analysis-mcp",
+  "version": "1.0.0",
+  "description": "Claude MCP服务器，提供股票分析功能",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "claude-stock-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "fastmcp dev src/index.ts",
+    "inspect": "fastmcp inspect src/index.ts",
+    "prepare": "npm run build",
+    "lint": "npx eslint src",
+    "lint:fix": "npm run lint -- --fix"
+  },
+  "keywords": [
+    "claude",
+    "mcp",
+    "stock",
+    "analysis",
+    "trading"
+  ],
+  "dependencies": {
+    "@eslint/js": "^9.21.0",
+    "eslint-config-prettier": "^10.0.2",
+    "eslint-plugin-prettier": "^5.2.3",
+    "fastmcp": "^1.20.2",
+    "globals": "^16.0.0",
+    "typescript-eslint": "^8.26.0",
+    "uuid": "^9.0.1",
+    "yahoo-finance2": "^2.9.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "author": "Your Name",
+  "license": "MIT"
+}
