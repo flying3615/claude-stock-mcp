@@ -7,6 +7,7 @@
 import { FastMCP, UserError } from 'fastmcp';
 import { z } from 'zod';
 import { executeIntegratedAnalysis } from './analysis/IntegratedAnalysis.js';
+import { FMPQuery } from './analysis/fmp/FMPQuery.js';
 
 // 初始化 FastMCP 实例
 const server = new FastMCP({
@@ -45,6 +46,34 @@ server.addTool({
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-expect-error
     const result = await executeIntegratedAnalysis(symbol, weights);
+    return JSON.stringify(result);
+  },
+});
+
+server.addTool({
+  name: 'company-fundamental',
+  description: '获得公司基本面信息',
+  parameters: z.object({
+    symbol: z.string().describe('股票代码，例如 AAPL 或 MSFT'),
+    metrics: z
+      .array(z.enum(['overview', 'income', 'balance', 'cash', 'ratios']))
+      .optional()
+      .describe('需要获取的指标列表概况，收入，资产负债表，现金流量表，比率'),
+  }),
+  execute: async (args, { log }) => {
+    const { symbol, metrics } = args;
+
+    // 验证股票代码
+    if (!symbol || !/^[A-Za-z0-9.]{1,10}$/.test(symbol)) {
+      throw new UserError('请提供有效的股票代码，例如 AAPL 或 MSFT');
+    }
+
+    log.info(`开始获得公司基本面信息 ${symbol.toUpperCase()}`);
+
+    const result = await new FMPQuery().companyFundamentals({
+      symbol,
+      metrics,
+    });
     return JSON.stringify(result);
   },
 });

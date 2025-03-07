@@ -5,10 +5,13 @@
 ## 功能特点
 
 - 完全兼容 Claude Desktop 的 MCP 接口
-- 提供一个主要工具:
+- 提供主要工具:
   - `get-stock-analysis`: 开始分析特定股票
+  - `company-fundamental`: 公司基本面数据
 - 集成了全面的股票分析功能
 - 生成详细的交易计划报告
+
+- TODO： 行业信息等
 
 ## 安装与配置
 
