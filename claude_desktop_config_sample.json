@@ -1,7 +1,13 @@
 {
   "mcpServers": {
     "stock-analysis": {
-      "command": "node /Users/yufei/Documents/git/claude-stock-mcp/dist/index.js"
+      "command": "node",
+      "args": [
+        "path/to/dist/index.js"
+      ],
+      "env": {
+        "FMP_API_KEY": "KEY_HERE"
+      }
     }
   }
 }
