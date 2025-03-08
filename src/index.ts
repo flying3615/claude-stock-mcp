@@ -8,6 +8,18 @@ import { FastMCP, UserError } from 'fastmcp';
 import { z } from 'zod';
 import { executeIntegratedAnalysis } from './analysis/IntegratedAnalysis.js';
 import { FMPQuery } from './finance/FMPQuery.js';
+import { StrategyAnalysisAgent } from './strategy/StrategyAnalysisAgent.js';
+import { TaskManager, TaskStatus } from './util/TaskManager.js';
+import { Logger } from './util/Logger.js';
+
+// 初始化日志记录器，重定向控制台输出到文件
+// 设置为true表示完全静默模式，不会有任何控制台输出，避免干扰Claude Desktop
+Logger.init(true);
+
+// 任务状态枚举
+
+// 初始化任务管理器
+const taskManager = new TaskManager();
 
 // 初始化 FastMCP 实例
 const server = new FastMCP({
@@ -77,6 +89,113 @@ server.addTool({
     return JSON.stringify(result);
   },
 });
+
+server.addTool({
+  name: 'start-bull-bear-scan',
+  description: '开始扫描市场中股票的多头和空头信号（异步任务）',
+  parameters: z.object({}),
+  execute: async (args, { log }) => {
+    // 使用新的任务包装器启动异步任务
+    const taskId = taskManager.startAsyncTask(
+      // 定义要执行的异步任务
+      async () => {
+        log.info(`开始扫描市场中股票的多头和空头信号`);
+        return await new StrategyAnalysisAgent().checkBullBearWithSR();
+      },
+      // 传递日志记录器
+      log
+    );
+
+    // 立即返回任务ID
+    return JSON.stringify({ taskId, status: TaskStatus.PENDING });
+  },
+});
+
+server.addTool({
+  name: 'get-task-status',
+  description: '查询异步任务的状态',
+  parameters: z.object({
+    taskId: z.string().describe('任务ID'),
+  }),
+  execute: async (args, { log }) => {
+    const { taskId } = args;
+
+    // 获取任务信息
+    const task = taskManager.getTask(taskId);
+
+    if (!task) {
+      throw new UserError(`找不到任务ID: ${taskId}`);
+    }
+
+    log.info(`查询任务状态，任务ID: ${taskId}, 状态: ${task.status}`);
+
+    // 如果任务已完成，直接返回结果（与原始API保持相同格式）
+    if (task.status === TaskStatus.COMPLETED && task.result) {
+      return JSON.stringify(task.result);
+    }
+
+    // 如果任务失败，抛出错误
+    if (task.status === TaskStatus.FAILED) {
+      throw new UserError(`任务执行失败: ${task.error || '未知错误'}`);
+    }
+
+    // 如果任务仍在进行中，返回状态信息
+    return JSON.stringify({
+      taskId: task.id,
+      status: task.status,
+      startTime: task.startTime,
+      message: '任务仍在处理中，请稍后再查询',
+    });
+  },
+});
+
+server.addTool({
+  name: 'start-strong-signal-scan',
+  description: '开始扫描市场中强势股票（异步任务）',
+  parameters: z.object({}),
+  execute: async (args, { log }) => {
+    // 使用任务包装器启动异步任务
+    const taskId = taskManager.startAsyncTask(
+      // 定义要执行的异步任务
+      async () => {
+        log.info(`开始扫描市场中强势股票`);
+        return await new StrategyAnalysisAgent().queryStrongSignalStocks();
+      },
+      // 传递日志记录器
+      log
+    );
+
+    // 立即返回任务ID
+    return JSON.stringify({ taskId, status: TaskStatus.PENDING });
+  },
+});
+
+server.addTool({
+  name: 'start-hot-stock-scan',
+  description: '扫描市场中排名靠前的热门股票（异步任务）',
+  parameters: z.object({}),
+  execute: async (args, { log }) => {
+    const taskId = taskManager.startAsyncTask(
+      async () => {
+        log.info(`开始扫描市场中热门股票代码`);
+        return await new StrategyAnalysisAgent().queryRecordRankedHotStockCodes();
+      },
+      // 传递日志记录器
+      log
+    );
+
+    // 立即返回任务ID
+    return JSON.stringify({ taskId, status: TaskStatus.PENDING });
+  },
+});
+
+// 设置定期清理过期任务
+setInterval(
+  () => {
+    taskManager.cleanupTasks(24); // 清理24小时前完成的任务
+  },
+  60 * 60 * 1000
+); // 每小时执行一次
 
 // 启动服务器
 await server.start({

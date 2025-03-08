@@ -63,10 +63,6 @@ export class StrategyAnalysisAgent {
           continue;
         }
 
-        console.log(
-          `股票: ${quoteSummary.symbol}，近期看涨信号: ${checkResult.bullishDatesWithinLast5Days.length}，近期看跌信号: ${checkResult.bearishDatesWithinLast5Days.length}`
-        );
-
         // 3. 获取支撑阻力位
         const srResult = await breakoutDetector.run(quoteSummary.symbol);
 
@@ -165,12 +161,12 @@ export class StrategyAnalysisAgent {
   };
 
   /**
-   * 查询市场中强势股票，并获得分析结果
+   * 查询市场中最活跃的股票是否出现可交易信号
    */
   queryStrongSignalStocks = async () => {
-    const gainersWithScore = await this.marketQuery.rankTopGainersAndTrending(
-      fetchConditionForMarket
-    );
+    const gainersWithScore = await this.marketQuery.scanWholeMarket([
+      'most_actives',
+    ]);
 
     const strongSignalResult = [];
 
@@ -185,4 +181,25 @@ export class StrategyAnalysisAgent {
 
     return strongSignalResult;
   };
+
+  /**
+   * 查询市场中排名靠前的热门股票代码
+   */
+  queryRecordRankedHotStockCodes = async () => {
+    return await this.marketQuery.rankTopGainersAndTrending(
+      fetchConditionForMarket
+    );
+  };
 }
+
+async function main() {
+  const agent = new StrategyAnalysisAgent();
+  // const result = await agent.queryStrongSignalStocks();
+  // console.log('StrongSignalStocks:', result);
+  // const result2 = await agent.checkBullBearWithSR();
+  // console.log('BullBearWithSR:', result2);
+  const result3 = await agent.queryRecordRankedHotStockCodes();
+  console.log('RecordRankedHotStockCodes:', result3);
+}
+
+main();

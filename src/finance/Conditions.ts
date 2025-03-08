@@ -1,8 +1,7 @@
-import { ConditionOptions, QuoteSummary } from '../types.ts';
+import { ConditionOptions, QuoteSummary } from '../types.js';
 import yahooFinance from 'yahoo-finance2';
-import { ChartOptions } from 'yahoo-finance2/dist/esm/src/modules/chart';
 import _ from 'lodash';
-import { BreakoutDetector } from '../strategy/BreakoutDetector.ts';
+import { BreakoutDetector } from '../strategy/BreakoutDetector.js';
 
 export class Conditions {
   /**
@@ -146,11 +145,11 @@ export class Conditions {
     const queryOptions = {
       period1: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000),
       interval: '1d',
-    } as ChartOptions;
+    } as any;
 
     const symbol = quoteSummary.symbol;
 
-    const chartResult = await yahooFinance.chart(symbol, queryOptions);
+    const chartResult = (await yahooFinance.chart(symbol, queryOptions)) as any;
     if (!chartResult || !chartResult.quotes) {
       console.error('No data found for symbol:', symbol);
       return false;

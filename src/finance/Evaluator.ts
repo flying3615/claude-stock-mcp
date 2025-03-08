@@ -1,5 +1,5 @@
 import yahooFinance from 'yahoo-finance2';
-import { QuoteSummary, Weight } from '../types.ts';
+import { QuoteSummary, Weight } from '../types.js';
 
 yahooFinance.setGlobalConfig({
   validation: { _internalThrowOnAdditionalProperties: false, logErrors: false },
