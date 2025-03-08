@@ -7,7 +7,7 @@
 import { FastMCP, UserError } from 'fastmcp';
 import { z } from 'zod';
 import { executeIntegratedAnalysis } from './analysis/IntegratedAnalysis.js';
-import { FMPQuery } from './analysis/fmp/FMPQuery.js';
+import { FMPQuery } from './finance/FMPQuery.js';
 
 // 初始化 FastMCP 实例
 const server = new FastMCP({

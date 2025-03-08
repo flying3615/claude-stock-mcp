@@ -1,14 +1,5 @@
 import yahooFinance from 'yahoo-finance2';
-
-export interface Candle {
-  symbol: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  volume: number;
-  timestamp: Date;
-}
+import { Candle } from '../types.js';
 
 export function isToday(date: Date): boolean {
   const today = new Date();
@@ -22,6 +13,22 @@ export function isToday(date: Date): boolean {
 export interface NamedPromise<T> {
   promise: Promise<T>;
   name: string;
+}
+
+/**
+ * 检查价格是否在某个水平附近
+ * @param price 当前价格
+ * @param level 价格水平
+ * @param threshold 阈值（百分比）
+ * @returns 是否在水平附近
+ */
+export function isNearLevel(
+  price: number,
+  level: number,
+  threshold: number
+): boolean {
+  const diff = Math.abs(price - level) / level;
+  return diff <= threshold;
 }
 
 export const promiseWithTimeout = async <T>(

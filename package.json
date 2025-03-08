@@ -29,12 +29,15 @@
     "eslint-plugin-prettier": "^5.2.3",
     "fastmcp": "^1.20.2",
     "globals": "^16.0.0",
+    "lodash": "^4.17.21",
+    "technicalindicators": "^3.1.0",
     "typescript-eslint": "^8.26.0",
     "uuid": "^9.0.1",
     "yahoo-finance2": "^2.9.1",
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@types/lodash": "^4.17.16",
     "rimraf": "^6.0.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
