@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 /**
  * Stock Analysis MCP Server
  *
@@ -93,14 +95,34 @@ server.addTool({
 server.addTool({
   name: 'start-bull-bear-scan',
   description: '开始扫描市场中股票的多头和空头信号（异步任务）',
-  parameters: z.object({}),
+  parameters: z.object({
+    minVolume: z.number().default(5000000).optional().describe('最小成交量'),
+    sourceIds: z
+      .array(
+        z.enum([
+          'day_gainers',
+          'growth_technology_stocks',
+          'most_actives',
+          'small_cap_gainers',
+          'aggressive_small_caps',
+        ])
+      )
+      .default(['most_actives'])
+      .optional()
+      .describe('股票分类'),
+  }),
+
   execute: async (args, { log }) => {
+    const { minVolume, sourceIds } = args;
     // 使用新的任务包装器启动异步任务
     const taskId = taskManager.startAsyncTask(
       // 定义要执行的异步任务
       async () => {
         log.info(`开始扫描市场中股票的多头和空头信号`);
-        return await new StrategyAnalysisAgent().checkBullBearWithSR();
+        return await new StrategyAnalysisAgent().checkBullBearWithSR({
+          minVolume,
+          sourceIds,
+        });
       },
       // 传递日志记录器
       log

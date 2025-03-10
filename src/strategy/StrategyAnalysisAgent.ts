@@ -1,9 +1,10 @@
 import { MarketQuery } from '../finance/MarketQuery.js';
-import { fetchConditionForMarket, sourceIds } from '../config.js';
+import { fetchConditionForMarket } from '../config.js';
 import { checkBullOrBearRecently } from './BullOrBearDetector.js';
 import { BreakoutDetector } from './BreakoutDetector.js';
 import { executeIntegratedAnalysis } from '../analysis/IntegratedAnalysis.js';
 import { isNearLevel } from '../util/util.js';
+import { ConditionOptionsWithSrc } from '../types.js';
 
 export class StrategyAnalysisAgent {
   marketQuery = new MarketQuery();
@@ -11,11 +12,8 @@ export class StrategyAnalysisAgent {
   /**
    * 检查市场中的股票在支撑和阻力位附近是否出现了多空信号
    */
-  checkBullBearWithSR = async () => {
-    const stockSummaries = await this.marketQuery.fetchWholeMarketData({
-      minVolume: 5000000, // 成交量 > 500万
-      sourceIds,
-    });
+  checkBullBearWithSR = async (config: ConditionOptionsWithSrc) => {
+    const stockSummaries = await this.marketQuery.fetchWholeMarketData(config);
 
     const endDate = new Date();
     const startDate = new Date();

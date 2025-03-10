@@ -1,6 +1,6 @@
 {
-  "name": "claude-stock-analysis-mcp",
-  "version": "1.0.0",
+  "name": "@gabriel3615/claude-stock-analysis-mcp",
+  "version": "1.0.1",
   "description": "Claude MCP服务器，提供股票分析功能",
   "type": "module",
   "main": "dist/index.js",
@@ -14,7 +14,10 @@
     "inspect": "fastmcp inspect src/index.ts",
     "prepare": "npm run build",
     "lint": "npx eslint src",
-    "lint:fix": "npm run lint -- --fix"
+    "lint:fix": "npm run lint -- --fix",
+    "publish:patch": "npm version patch && npm publish --access public",
+    "publish:minor": "npm version minor && npm publish --access public",
+    "publish:major": "npm version major && npm publish --access public"
   },
   "keywords": [
     "claude",
