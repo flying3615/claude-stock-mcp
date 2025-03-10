@@ -73,9 +73,9 @@
    {
      "mcpServers": {
        "stock-analysis": {
-       "command": "node",
+       "command": "npx",
        "args": [
-         "path/to/dist/index.js"
+         "@gabriel3615/claude-stock-analysis-mcp"
         ],
         "env": {
          "FMP_API_KEY": "KEY_HERE"
