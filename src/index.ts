@@ -93,12 +93,15 @@ server.addTool({
       throw new UserError('请提供有效的股票代码，例如 AAPL 或 MSFT');
     }
 
-    log.info(`开始分析股票 ${symbol.toUpperCase()}`);
-
-    // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-    // @ts-expect-error
-    const result = await executeIntegratedAnalysis(symbol, weights);
-    return JSON.stringify(result);
+    try {
+      log.info(`开始分析股票 ${symbol.toUpperCase()}`);
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
+      const result = await executeIntegratedAnalysis(symbol, weights);
+      return JSON.stringify(result);
+    } catch (e) {
+      throw new UserError(`分析股票失败: ${e.message}`);
+    }
   },
 });
 
@@ -121,14 +124,16 @@ server.addTool({
     if (!symbol || !/^[A-Za-z0-9.]{1,10}$/.test(symbol)) {
       throw new UserError('请提供有效的股票代码，例如 AAPL 或 MSFT');
     }
-
-    log.info(`开始获得公司基本面信息 ${symbol.toUpperCase()}`);
-
-    const result = await new FMPQuery().companyFundamentals({
-      symbol,
-      metrics,
-    });
-    return JSON.stringify(result);
+    try {
+      log.info(`开始获得公司基本面信息 ${symbol.toUpperCase()}`);
+      const result = await new FMPQuery().companyFundamentals({
+        symbol,
+        metrics,
+      });
+      return JSON.stringify(result);
+    } catch (e) {
+      throw new UserError(`获取公司基本面信息失败: ${e.message}`);
+    }
   },
 });
 
@@ -140,23 +145,29 @@ server.addTool({
     topNumber: z.number().optional().default(10).describe('显示前几名'),
   }),
   execute: async args => {
-    const { types, topNumber } = args;
-    const fmpQuery = new FMPQuery();
-    const result = {};
+    try {
+      const { types, topNumber } = args;
+      const fmpQuery = new FMPQuery();
+      const result = {};
 
-    if (types.includes('gainers')) {
-      result['biggestGainers'] = await fmpQuery.queryBiggestGainers(topNumber);
+      if (types.includes('gainers')) {
+        result['biggestGainers'] =
+          await fmpQuery.queryBiggestGainers(topNumber);
+      }
+
+      if (types.includes('losers')) {
+        result['biggestLosers'] = await fmpQuery.queryBiggestLosers(topNumber);
+      }
+
+      if (types.includes('top')) {
+        result['topPerformers'] =
+          await fmpQuery.queryTopTradedStocks(topNumber);
+      }
+
+      return JSON.stringify(result);
+    } catch (e) {
+      throw new UserError(`获取市场表现失败: ${e.message}`);
     }
-
-    if (types.includes('losers')) {
-      result['biggestLosers'] = await fmpQuery.queryBiggestLosers(topNumber);
-    }
-
-    if (types.includes('top')) {
-      result['topPerformers'] = await fmpQuery.queryTopTradedStocks(topNumber);
-    }
-
-    return JSON.stringify(result);
   },
 });
 

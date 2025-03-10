@@ -2004,6 +2004,3 @@ export {
   executeIntegratedAnalysis,
   assignTimeframePriorities,
 };
-
-// TODO combine BullOrBearishSignal and this to confirm the signal
-// executeIntegratedAnalysis('IAG');
