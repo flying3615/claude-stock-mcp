@@ -15,6 +15,7 @@
   - `start-strong-signal-scan`: 扫描市场中的强势股票（异步任务）
   - `start-hot-stock-scan`: 扫描市场中排名靠前的热门股票（异步任务）
   - `get-task-status`: 查询异步任务的状态和结果
+  - `market-performance`: 今日市场表现，查询涨跌幅，交易量最大的股票
 - 支持长时间运行的异步分析任务
 - 集成了全面的股票分析功能
 - 生成详细的交易计划报告
@@ -75,7 +76,7 @@
        "stock-analysis": {
        "command": "npx",
        "args": [
-         "@gabriel3615/claude-stock-analysis-mcp"
+         "@gabriel3615/claude-stock-analysis-mcp@latest"
         ],
         "env": {
          "FMP_API_KEY": "KEY_HERE"

@@ -107,3 +107,24 @@ export type ConditionOptionsWithSrc = ConditionOptions & {
 export interface Strategy<T> {
   run(_): T;
 }
+
+export interface CompanyFundamentalsArgs {
+  symbol: string;
+  metrics?: (
+    | 'overview'
+    | 'income'
+    | 'balance'
+    | 'cash'
+    | 'ratios'
+    | 'ratings'
+  )[];
+}
+
+export interface StockQueryResult {
+  symbol: string;
+  price: number;
+  name: string;
+  change: number;
+  changesPercentage: number;
+  exchange: string;
+}

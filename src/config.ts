@@ -34,7 +34,7 @@ export const fetchConditionForMarket: ConditionOptionsWithSrc = {
   minVolume: 5000000, // 成交量 > 500万
   // higherThanLast120DaysHighest: true, // 当前平均价格高于过去120天最高价
   // maxSharesOutstanding: 10000000000, // 流通股数最大不过10亿
-  // bullish: true, // 看多 当前》50均线》200均线 //TODO: add bearish??
+  bullish: true, // 看多 当前》50均线》200均线
   sourceIds: sourceIds, // 从哪些板块获取
-  // breakout: true, // 检测突破
+  breakout: true, // 检测突破
 };

@@ -29,6 +29,44 @@ const server = new FastMCP({
   version: '1.0.0',
 });
 
+server.addTool({
+  name: 'get-task-status',
+  description: '查询异步任务的状态',
+  parameters: z.object({
+    taskId: z.string().describe('任务ID'),
+  }),
+  execute: async (args, { log }) => {
+    const { taskId } = args;
+
+    // 获取任务信息
+    const task = taskManager.getTask(taskId);
+
+    if (!task) {
+      throw new UserError(`找不到任务ID: ${taskId}`);
+    }
+
+    log.info(`查询任务状态，任务ID: ${taskId}, 状态: ${task.status}`);
+
+    // 如果任务已完成，直接返回结果（与原始API保持相同格式）
+    if (task.status === TaskStatus.COMPLETED && task.result) {
+      return JSON.stringify(task.result);
+    }
+
+    // 如果任务失败，抛出错误
+    if (task.status === TaskStatus.FAILED) {
+      throw new UserError(`任务执行失败: ${task.error || '未知错误'}`);
+    }
+
+    // 如果任务仍在进行中，返回状态信息
+    return JSON.stringify({
+      taskId: task.id,
+      status: task.status,
+      startTime: task.startTime,
+      message: '任务仍在处理中，请稍后再查询',
+    });
+  },
+});
+
 /**
  * 获取股票分析报告
  *
@@ -66,11 +104,13 @@ server.addTool({
 
 server.addTool({
   name: 'company-fundamental',
-  description: '获得公司基本面信息',
+  description: '获得公司基本信息及评级',
   parameters: z.object({
     symbol: z.string().describe('股票代码，例如 AAPL 或 MSFT'),
     metrics: z
-      .array(z.enum(['overview', 'income', 'balance', 'cash', 'ratios']))
+      .array(
+        z.enum(['overview', 'income', 'balance', 'cash', 'ratios', 'ratings'])
+      )
       .optional()
       .describe('需要获取的指标列表概况，收入，资产负债表，现金流量表，比率'),
   }),
@@ -88,6 +128,34 @@ server.addTool({
       symbol,
       metrics,
     });
+    return JSON.stringify(result);
+  },
+});
+
+server.addTool({
+  name: 'market-performance',
+  description: '今日市场表现',
+  parameters: z.object({
+    types: z.array(z.enum(['gainers', 'losers', 'top'])).default(['gainers']),
+    topNumber: z.number().optional().default(10).describe('显示前几名'),
+  }),
+  execute: async args => {
+    const { types, topNumber } = args;
+    const fmpQuery = new FMPQuery();
+    const result = {};
+
+    if (types.includes('gainers')) {
+      result['biggestGainers'] = await fmpQuery.queryBiggestGainers(topNumber);
+    }
+
+    if (types.includes('losers')) {
+      result['biggestLosers'] = await fmpQuery.queryBiggestLosers(topNumber);
+    }
+
+    if (types.includes('top')) {
+      result['topPerformers'] = await fmpQuery.queryTopTradedStocks(topNumber);
+    }
+
     return JSON.stringify(result);
   },
 });
@@ -134,46 +202,8 @@ server.addTool({
 });
 
 server.addTool({
-  name: 'get-task-status',
-  description: '查询异步任务的状态',
-  parameters: z.object({
-    taskId: z.string().describe('任务ID'),
-  }),
-  execute: async (args, { log }) => {
-    const { taskId } = args;
-
-    // 获取任务信息
-    const task = taskManager.getTask(taskId);
-
-    if (!task) {
-      throw new UserError(`找不到任务ID: ${taskId}`);
-    }
-
-    log.info(`查询任务状态，任务ID: ${taskId}, 状态: ${task.status}`);
-
-    // 如果任务已完成，直接返回结果（与原始API保持相同格式）
-    if (task.status === TaskStatus.COMPLETED && task.result) {
-      return JSON.stringify(task.result);
-    }
-
-    // 如果任务失败，抛出错误
-    if (task.status === TaskStatus.FAILED) {
-      throw new UserError(`任务执行失败: ${task.error || '未知错误'}`);
-    }
-
-    // 如果任务仍在进行中，返回状态信息
-    return JSON.stringify({
-      taskId: task.id,
-      status: task.status,
-      startTime: task.startTime,
-      message: '任务仍在处理中，请稍后再查询',
-    });
-  },
-});
-
-server.addTool({
   name: 'start-strong-signal-scan',
-  description: '开始扫描市场中强势股票（异步任务）',
+  description: '开始扫描市场中基于信号的强势股票（异步任务）',
   parameters: z.object({}),
   execute: async (args, { log }) => {
     // 使用任务包装器启动异步任务
@@ -194,7 +224,7 @@ server.addTool({
 
 server.addTool({
   name: 'start-hot-stock-scan',
-  description: '扫描市场中排名靠前的热门股票（异步任务）',
+  description: '扫描市场中基于适合趋势条件的热门股票（异步任务）',
   parameters: z.object({}),
   execute: async (args, { log }) => {
     const taskId = taskManager.startAsyncTask(
