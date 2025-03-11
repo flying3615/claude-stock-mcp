@@ -141,4 +141,54 @@ export class FMPQuery {
         }) as StockQueryResult
     );
   }
+
+  /**
+   *  Query all indexes performance
+   */
+  async queryIndexPerformance() {
+    const indexSymobls = [
+      {
+        symbol: '^GSPC',
+        name: 'S&P 500',
+      },
+      {
+        symbol: '^DJI',
+        name: 'Dow Jones Industrial Average',
+      },
+      {
+        symbol: '^IXIC',
+        name: 'Nasdaq Composite',
+      },
+      {
+        symbol: '^RUT',
+        name: 'Russell 2000',
+      },
+    ];
+
+    const result = [];
+
+    for (const index of indexSymobls) {
+      const url = new URL(`${this.FMP_BASE_URL}/quote`);
+      url.searchParams.append('apikey', process.env.FMP_API_KEY!);
+      url.searchParams.append('symbol', index.symbol);
+
+      const response = await fetch(url.toString());
+      if (!response.ok) {
+        throw new Error(
+          `FMP API error for ${index.symbol}: ${response.statusText}`
+        );
+      }
+
+      const data = await response.json();
+      index['price'] = data[0].price;
+      index['changePercentage'] = data[0].changePercentage;
+      index['volume'] = data[0].volume;
+      index['priceAvg50'] = data[0].priceAvg50;
+      index['priceAvg200'] = data[0].priceAvg200;
+
+      result.push(index);
+    }
+
+    return result;
+  }
 }

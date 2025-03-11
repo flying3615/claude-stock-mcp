@@ -141,8 +141,8 @@ server.addTool({
   name: 'market-performance',
   description: '今日市场表现',
   parameters: z.object({
-    types: z.array(z.enum(['gainers', 'losers', 'top'])).default(['gainers']),
-    topNumber: z.number().optional().default(10).describe('显示前几名'),
+    types: z.array(z.enum(['gainers', 'losers', 'top'])).default(['top']),
+    topNumber: z.number().optional().default(5).describe('显示前几名'),
   }),
   execute: async args => {
     try {
@@ -163,6 +163,8 @@ server.addTool({
         result['topPerformers'] =
           await fmpQuery.queryTopTradedStocks(topNumber);
       }
+
+      result['indexes'] = await fmpQuery.queryIndexPerformance();
 
       return JSON.stringify(result);
     } catch (e) {
