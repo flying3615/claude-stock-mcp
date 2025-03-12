@@ -8,7 +8,6 @@
 
 import { FastMCP, UserError } from 'fastmcp';
 import { z } from 'zod';
-import { executeIntegratedAnalysis } from './analysis/IntegratedAnalysis.js';
 import { FMPQuery } from './finance/FMPQuery.js';
 import { StrategyAnalysisAgent } from './strategy/StrategyAnalysisAgent.js';
 import { TaskManager, TaskStatus } from './util/TaskManager.js';

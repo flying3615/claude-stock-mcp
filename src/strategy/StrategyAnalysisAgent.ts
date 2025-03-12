@@ -2,9 +2,9 @@ import { MarketQuery } from '../finance/MarketQuery.js';
 import { fetchConditionForMarket } from '../config.js';
 import { checkBullOrBearRecently } from './BullOrBearDetector.js';
 import { BreakoutDetector } from './BreakoutDetector.js';
-import { executeIntegratedAnalysis } from '../analysis/IntegratedAnalysis.js';
 import { isNearLevel } from '../util/util.js';
 import { ConditionOptionsWithSrc } from '../types.js';
+import { executeIntegratedAnalysis } from '@gabriel3615/ta_analysis';
 
 export class StrategyAnalysisAgent {
   marketQuery = new MarketQuery();
@@ -189,15 +189,3 @@ export class StrategyAnalysisAgent {
     );
   };
 }
-
-async function main() {
-  const agent = new StrategyAnalysisAgent();
-  // const result = await agent.queryStrongSignalStocks();
-  // console.log('StrongSignalStocks:', result);
-  // const result2 = await agent.checkBullBearWithSR();
-  // console.log('BullBearWithSR:', result2);
-  const result3 = await agent.queryRecordRankedHotStockCodes();
-  console.log('RecordRankedHotStockCodes:', result3);
-}
-
-main();
