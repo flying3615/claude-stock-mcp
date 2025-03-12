@@ -1,7 +1,7 @@
 import {
   ChipDistribution,
   ChipPeak,
-} from '../analysis/chip/chipDistributionAnalysis.js';
+} from '@gabriel3615/ta_analysis/dist/analysis/chip/chipDistributionAnalysis.js';
 
 /**
  * 计算基尼系数 - 衡量分布不平等程度
