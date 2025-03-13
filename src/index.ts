@@ -12,6 +12,7 @@ import { FMPQuery } from './finance/FMPQuery.js';
 import { StrategyAnalysisAgent } from './strategy/StrategyAnalysisAgent.js';
 import { TaskManager, TaskStatus } from './util/TaskManager.js';
 import { Logger } from './util/Logger.js';
+import { executeIntegratedAnalysis } from '@gabriel3615/ta_analysis';
 
 // 初始化日志记录器，重定向控制台输出到文件
 // 设置为true表示完全静默模式，不会有任何控制台输出，避免干扰Claude Desktop
