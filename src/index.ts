@@ -146,6 +146,7 @@ server.addTool({
   }),
   execute: async args => {
     try {
+      // vix index
       const { types, topNumber } = args;
       const fmpQuery = new FMPQuery();
       const result = {};

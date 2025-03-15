@@ -1,6 +1,7 @@
 import yahooFinance from 'yahoo-finance2';
 
 import _ from 'lodash';
+import axios from 'axios';
 
 import { marketQueryConfig, weight } from '../config.js';
 import { Conditions } from './Conditions.js';
@@ -8,7 +9,9 @@ import { Evaluator } from './Evaluator.js';
 import {
   Candle,
   ConditionOptionsWithSrc,
+  FearGreedData,
   Interval,
+  MarketData,
   QuoteSummary,
 } from '../types.js';
 
@@ -349,6 +352,272 @@ export class MarketQuery {
         e.message
       );
       return ''; // 返回 null 表示出错
+    }
+  }
+
+  // 1. 获取CNN恐惧贪婪指数
+  async getFearGreedIndex(): Promise<FearGreedData | null> {
+    try {
+      const url =
+        'https://production.dataviz.cnn.io/index/fearandgreed/graphdata';
+      const headers = {
+        'User-Agent':
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      };
+
+      const response = await axios.get(url, { headers });
+      const data = response.data;
+
+      return {
+        score: data.fear_and_greed.score,
+        rating: data.fear_and_greed.rating,
+        timestamp: data.fear_and_greed.timestamp,
+        historical: data.fear_and_greed_historical,
+      };
+    } catch (error) {
+      console.error(`获取恐惧贪婪指数时出错: ${error}`);
+      return null;
+    }
+  }
+
+  // 3. 获取市场主要指数数据
+  async getMarketIndices(): Promise<MarketData[] | null> {
+    try {
+      const indices = [
+        { symbol: '^VIX', name: 'Volatility Index' },
+        { symbol: '^GSPC', name: 'S&P 500' },
+        { symbol: '^DJI', name: 'Dow Jones' },
+        { symbol: '^IXIC', name: 'NASDAQ' },
+        { symbol: '^RUT', name: 'Russell 2000' },
+      ];
+
+      const indexData: MarketData[] = [];
+      for (const index of indices) {
+        const quote = await yahooFinance.quote(index.symbol);
+        indexData.push({
+          symbol: quote.symbol,
+          name: index.name,
+          price: quote.regularMarketPrice,
+          change: quote.regularMarketChange,
+          changePercent: `${quote.regularMarketChangePercent.toFixed(2)}%`,
+          timestamp: quote.regularMarketTime,
+        });
+      }
+
+      return indexData;
+    } catch (error) {
+      console.error(`获取市场指数数据时出错: ${error}`);
+      return null;
+    }
+  }
+
+  // 4. 获取美国国债收益率曲线
+  async getTreasuryYields(): Promise<any | null> {
+    try {
+      const treasuries = [
+        { symbol: '^IRX', name: '13-Week' },
+        { symbol: '^FVX', name: '5-Year' },
+        { symbol: '^TNX', name: '10-Year' },
+        { symbol: '^TYX', name: '30-Year' },
+      ];
+
+      const result: any = {};
+      for (const treasury of treasuries) {
+        const quote = await yahooFinance.quote(treasury.symbol);
+        result[treasury.name] = {
+          yield: quote.regularMarketPrice,
+          change: `${quote.regularMarketChange.toFixed(2)}%`,
+          timestamp: quote.regularMarketTime,
+        };
+      }
+      return result;
+    } catch (error) {
+      console.error(`获取国债收益率数据时出错: ${error}`);
+      return null;
+    }
+  }
+
+  // 5. 获取商品市场数据
+  async getCommoditiesData(): Promise<any | null> {
+    try {
+      const commodities = [
+        { symbol: 'GC=F', name: 'Gold' },
+        { symbol: 'SI=F', name: 'Silver' },
+        { symbol: 'CL=F', name: 'Crude Oil' },
+        { symbol: 'NG=F', name: 'Natural Gas' },
+        { symbol: 'ZC=F', name: 'Corn' },
+        { symbol: 'ZW=F', name: 'Wheat' },
+        { symbol: 'ZS=F', name: 'Soybeans' },
+      ];
+
+      const result: any[] = [];
+
+      for (const commodity of commodities) {
+        const quote = await yahooFinance.quote(commodity.symbol);
+        result.push({
+          symbol: quote.symbol,
+          name: commodity.name,
+          price: quote.regularMarketPrice,
+          change: quote.regularMarketChange,
+          changePercent: quote.regularMarketChangePercent,
+          timestamp: quote.regularMarketTime,
+        });
+      }
+
+      return result;
+    } catch (error) {
+      console.error(`获取商品市场数据时出错: ${error}`);
+      return null;
+    }
+  }
+
+  // 6. 获取加密货币市场数据
+  async getCryptoData(): Promise<any | null> {
+    try {
+      const cryptos = [
+        { symbol: 'BTC-USD', name: 'Bitcoin' },
+        { symbol: 'ETH-USD', name: 'Ethereum' },
+        { symbol: 'SOL-USD', name: 'Solana' },
+        { symbol: 'XRP-USD', name: 'Ripple' },
+        { symbol: 'ADA-USD', name: 'Cardano' },
+        { symbol: 'DOGE-USD', name: 'Dogecoin' },
+      ];
+
+      const result: any[] = [];
+
+      for (const crypto of cryptos) {
+        const quote = await yahooFinance.quote(crypto.symbol);
+
+        if (quote) {
+          result.push({
+            symbol: quote.symbol,
+            name: crypto.name,
+            price: quote.regularMarketPrice,
+            change: quote.regularMarketChange,
+            changePercent: quote.regularMarketChangePercent,
+            timestamp: quote.regularMarketTime,
+          });
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error(`获取加密货币数据时出错: ${error}`);
+      return null;
+    }
+  }
+
+  // 7. 获取外汇汇率数据
+  async getForexData(): Promise<any | null> {
+    try {
+      const pairs = [
+        { symbol: 'EURUSD=X', name: 'EUR/USD' },
+        { symbol: 'GBPUSD=X', name: 'GBP/USD' },
+        { symbol: 'USDJPY=X', name: 'USD/JPY' },
+        { symbol: 'USDCNY=X', name: 'USD/CNY' },
+        { symbol: 'USDCHF=X', name: 'USD/CHF' },
+        { symbol: 'AUDUSD=X', name: 'AUD/USD' },
+        { symbol: 'USDRUB=X', name: 'USD/RUB' },
+      ];
+
+      const result: any[] = [];
+
+      for (const pair of pairs) {
+        const quote = await yahooFinance.quote(pair.symbol);
+
+        if (quote) {
+          result.push({
+            symbol: quote.symbol,
+            name: pair.name,
+            price: quote.regularMarketPrice,
+            change: quote.regularMarketChange,
+            changePercent: quote.regularMarketChangePercent,
+            timestamp: quote.regularMarketTime,
+          });
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error(`获取外汇数据时出错: ${error}`);
+      return null;
+    }
+  }
+
+  // 8. 获取经济指标 - 使用Alpha Vantage API
+  async getEconomicIndicators(apiKey: string): Promise<any | null> {
+    try {
+      // 获取GDP增长率
+      const gdpUrl = `https://www.alphavantage.co/query?function=REAL_GDP&interval=quarterly&apikey=${apiKey}`;
+      const gdpResponse = await axios.get(gdpUrl);
+
+      // 获取通货膨胀率
+      const inflationUrl = `https://www.alphavantage.co/query?function=INFLATION&apikey=${apiKey}`;
+      const inflationResponse = await axios.get(inflationUrl);
+
+      // 获取联邦基金利率
+      const fedFundsRateUrl = `https://www.alphavantage.co/query?function=FEDERAL_FUNDS_RATE&apikey=${apiKey}`;
+      const fedFundsRateResponse = await axios.get(fedFundsRateUrl);
+
+      // 获取CPI
+      const cpiUrl = `https://www.alphavantage.co/query?function=CPI&apikey=${apiKey}`;
+      const cpiResponse = await axios.get(cpiUrl);
+
+      // 获取零售销售数据
+      const retailSalesUrl = `https://www.alphavantage.co/query?function=RETAIL_SALES&apikey=${apiKey}`;
+      const retailSalesResponse = await axios.get(retailSalesUrl);
+
+      // 获取失业率
+      const unemploymentUrl = `https://www.alphavantage.co/query?function=UNEMPLOYMENT&apikey=${apiKey}`;
+      const unemploymentResponse = await axios.get(unemploymentUrl);
+
+      // 处理并过滤GDP数据，只保留最近4个季度
+      const gdpData = gdpResponse.data;
+      if (gdpData && gdpData.data) {
+        gdpData.data = gdpData.data.slice(0, 4);
+      }
+
+      // 处理并过滤联邦基金利率数据，只保留最近6个数据点
+      const fedFundsRateData = fedFundsRateResponse.data;
+      if (fedFundsRateData && fedFundsRateData.data) {
+        fedFundsRateData.data = fedFundsRateData.data.slice(0, 6);
+      }
+
+      // 处理并过滤CPI数据，只保留最近6个数据点
+      const cpiData = cpiResponse.data;
+      if (cpiData && cpiData.data) {
+        cpiData.data = cpiData.data.slice(0, 6);
+      }
+
+      // 处理并过滤零售销售数据，只保留最近6个数据点
+      const retailSalesData = retailSalesResponse.data;
+      if (retailSalesData && retailSalesData.data) {
+        retailSalesData.data = retailSalesData.data.slice(0, 6);
+      }
+
+      // 处理并过滤通货膨胀率数据，只保留最近4个数据点
+      const inflationData = inflationResponse.data;
+      if (inflationData && inflationData.data) {
+        inflationData.data = inflationData.data.slice(0, 4);
+      }
+
+      // 处理并过滤失业率数据，只保留最近4个数据点
+      const unemploymentData = unemploymentResponse.data;
+      if (unemploymentData && unemploymentData.data) {
+        unemploymentData.data = unemploymentData.data.slice(0, 4);
+      }
+
+      return {
+        gdp: gdpData,
+        inflation: inflationData,
+        unemployment: unemploymentData,
+        fed_funds_rate: fedFundsRateData,
+        cpi: cpiData,
+        retail_sales: retailSalesData,
+      };
+    } catch (error) {
+      console.error(`获取经济指标数据时出错: ${error}`);
+      return null;
     }
   }
 }

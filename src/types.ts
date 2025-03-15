@@ -128,3 +128,23 @@ export interface StockQueryResult {
   changesPercentage: number;
   exchange: string;
 }
+
+export interface FearGreedData {
+  score: number;
+  rating: string;
+  timestamp: number;
+  historical?: Array<{
+    score: number;
+    rating: string;
+    timestamp: number;
+  }>;
+}
+
+export interface MarketData {
+  symbol: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: string;
+  timestamp: Date;
+}
