@@ -14,6 +14,7 @@ import { TaskManager, TaskStatus } from './util/TaskManager.js';
 import { Logger } from './util/Logger.js';
 import { executeIntegratedAnalysis } from '@gabriel3615/ta_analysis';
 import { MarketQuery } from './finance/MarketQuery.js';
+import { formatTradePlanOutput } from '@gabriel3615/ta_analysis/dist/analysis/FormatTradePlan.js';
 
 // 初始化日志记录器，重定向控制台输出到文件
 // 设置为true表示完全静默模式，不会有任何控制台输出，避免干扰Claude Desktop
@@ -100,8 +101,8 @@ server.addTool({
       log.info(`开始分析股票 ${symbol.toUpperCase()}`);
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
-      const result = await executeIntegratedAnalysis(symbol, weights);
-      return JSON.stringify(result);
+      const plan = await executeIntegratedAnalysis(symbol, weights);
+      return formatTradePlanOutput(plan);
     } catch (e) {
       throw new UserError(`分析股票失败: ${e.message}`);
     }
