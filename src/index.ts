@@ -152,7 +152,7 @@ server.addTool({
       const { types, topNumber } = args;
 
       const result = {};
-      const fearGreedIndex = marketQuery.getFearGreedIndex();
+      const fearGreedIndex = await marketQuery.getFearGreedIndex();
       if (fearGreedIndex) {
         result['fearGreedIndex'] = fearGreedIndex;
       }
@@ -171,7 +171,7 @@ server.addTool({
           await fmpQuery.queryTopTradedStocks(topNumber);
       }
 
-      result['indexes'] = await fmpQuery.queryIndexPerformance();
+      result['indexes'] = await marketQuery.getMarketIndices();
 
       return JSON.stringify(result);
     } catch (e) {
