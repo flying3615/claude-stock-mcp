@@ -102,7 +102,8 @@ server.addTool({
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
       const plan = await executeIntegratedAnalysis(symbol, weights);
-      return formatTradePlanOutput(plan);
+      // TODO call each analysis function and return the result
+      return JSON.stringify(plan);
     } catch (e) {
       throw new UserError(`分析股票失败: ${e.message}`);
     }
