@@ -20,6 +20,15 @@ yahooFinance.setGlobalConfig({
 });
 yahooFinance.suppressNotices(['yahooSurvey']);
 
+enum EconomicIndicator {
+  GDP = 'GDP',
+  Inflation = 'Inflation',
+  Unemployment = 'Unemployment',
+  FedFundsRate = 'FedFundsRate',
+  CPI = 'CPI',
+  RetailSales = 'RetailSales',
+}
+
 export class MarketQuery {
   topGainers: string[] = [];
   topTrending: string[] = [];
@@ -544,77 +553,82 @@ export class MarketQuery {
     }
   }
 
-  // 8. 获取经济指标 - 使用Alpha Vantage API
-  async getEconomicIndicators(apiKey: string): Promise<any | null> {
+  // 8. 获取经济指标
+  async getEconomicIndicators(
+    apiKey: string,
+    ecIndicatore: EconomicIndicator
+  ): Promise<any | null> {
     try {
-      // 获取GDP增长率
-      const gdpUrl = `https://www.alphavantage.co/query?function=REAL_GDP&interval=quarterly&apikey=${apiKey}`;
-      const gdpResponse = await axios.get(gdpUrl);
+      if (ecIndicatore === EconomicIndicator.GDP) {
+        // 获取GDP增长率
+        const gdpUrl = `https://www.alphavantage.co/query?function=REAL_GDP&interval=quarterly&apikey=${apiKey}`;
+        const gdpResponse = await axios.get(gdpUrl);
+        // 处理并过滤GDP数据，只保留最近4个季度
+        const gdpData = gdpResponse.data;
+        if (gdpData && gdpData.data) {
+          gdpData.data = gdpData.data.slice(0, 4);
+        }
+        return gdpData;
+      } else if (ecIndicatore === EconomicIndicator.Inflation) {
+        // 获取通货膨胀率
+        const inflationUrl = `https://www.alphavantage.co/query?function=INFLATION&apikey=${apiKey}`;
+        const inflationResponse = await axios.get(inflationUrl);
 
-      // 获取通货膨胀率
-      const inflationUrl = `https://www.alphavantage.co/query?function=INFLATION&apikey=${apiKey}`;
-      const inflationResponse = await axios.get(inflationUrl);
+        // 处理并过滤通货膨胀率数据，只保留最近4个数据点
+        const inflationData = inflationResponse.data;
+        if (inflationData && inflationData.data) {
+          inflationData.data = inflationData.data.slice(0, 4);
+        }
 
-      // 获取联邦基金利率
-      const fedFundsRateUrl = `https://www.alphavantage.co/query?function=FEDERAL_FUNDS_RATE&apikey=${apiKey}`;
-      const fedFundsRateResponse = await axios.get(fedFundsRateUrl);
+        return inflationData;
+      } else if (ecIndicatore === EconomicIndicator.Unemployment) {
+        // 获取失业率
+        const unemploymentUrl = `https://www.alphavantage.co/query?function=UNEMPLOYMENT&apikey=${apiKey}`;
+        const unemploymentResponse = await axios.get(unemploymentUrl);
 
-      // 获取CPI
-      const cpiUrl = `https://www.alphavantage.co/query?function=CPI&apikey=${apiKey}`;
-      const cpiResponse = await axios.get(cpiUrl);
+        // 处理并过滤失业率数据，只保留最近4个数据点
+        const unemploymentData = unemploymentResponse.data;
+        if (unemploymentData && unemploymentData.data) {
+          unemploymentData.data = unemploymentData.data.slice(0, 4);
+        }
+        return unemploymentData;
+      } else if (ecIndicatore === EconomicIndicator.FedFundsRate) {
+        // 获取联邦基金利率
+        const fedFundsRateUrl = `https://www.alphavantage.co/query?function=FEDERAL_FUNDS_RATE&apikey=${apiKey}`;
+        const fedFundsRateResponse = await axios.get(fedFundsRateUrl);
 
-      // 获取零售销售数据
-      const retailSalesUrl = `https://www.alphavantage.co/query?function=RETAIL_SALES&apikey=${apiKey}`;
-      const retailSalesResponse = await axios.get(retailSalesUrl);
+        // 处理并过滤联邦基金利率数据，只保留最近6个数据点
+        const fedFundsRateData = fedFundsRateResponse.data;
+        if (fedFundsRateData && fedFundsRateData.data) {
+          fedFundsRateData.data = fedFundsRateData.data.slice(0, 6);
+        }
 
-      // 获取失业率
-      const unemploymentUrl = `https://www.alphavantage.co/query?function=UNEMPLOYMENT&apikey=${apiKey}`;
-      const unemploymentResponse = await axios.get(unemploymentUrl);
+        return fedFundsRateData;
+      } else if (ecIndicatore === EconomicIndicator.CPI) {
+        // 获取CPI
+        const cpiUrl = `https://www.alphavantage.co/query?function=CPI&apikey=${apiKey}`;
+        const cpiResponse = await axios.get(cpiUrl);
 
-      // 处理并过滤GDP数据，只保留最近4个季度
-      const gdpData = gdpResponse.data;
-      if (gdpData && gdpData.data) {
-        gdpData.data = gdpData.data.slice(0, 4);
+        // 处理并过滤CPI数据，只保留最近6个数据点
+        const cpiData = cpiResponse.data;
+        if (cpiData && cpiData.data) {
+          cpiData.data = cpiData.data.slice(0, 6);
+        }
+        return cpiData;
+      } else if (ecIndicatore === EconomicIndicator.RetailSales) {
+        // 获取零售销售数据
+        const retailSalesUrl = `https://www.alphavantage.co/query?function=RETAIL_SALES&apikey=${apiKey}`;
+        const retailSalesResponse = await axios.get(retailSalesUrl);
+
+        // 处理并过滤零售销售数据，只保留最近6个数据点
+        const retailSalesData = retailSalesResponse.data;
+        if (retailSalesData && retailSalesData.data) {
+          retailSalesData.data = retailSalesData.data.slice(0, 6);
+        }
+        return retailSalesData;
+      } else {
+        return null;
       }
-
-      // 处理并过滤联邦基金利率数据，只保留最近6个数据点
-      const fedFundsRateData = fedFundsRateResponse.data;
-      if (fedFundsRateData && fedFundsRateData.data) {
-        fedFundsRateData.data = fedFundsRateData.data.slice(0, 6);
-      }
-
-      // 处理并过滤CPI数据，只保留最近6个数据点
-      const cpiData = cpiResponse.data;
-      if (cpiData && cpiData.data) {
-        cpiData.data = cpiData.data.slice(0, 6);
-      }
-
-      // 处理并过滤零售销售数据，只保留最近6个数据点
-      const retailSalesData = retailSalesResponse.data;
-      if (retailSalesData && retailSalesData.data) {
-        retailSalesData.data = retailSalesData.data.slice(0, 6);
-      }
-
-      // 处理并过滤通货膨胀率数据，只保留最近4个数据点
-      const inflationData = inflationResponse.data;
-      if (inflationData && inflationData.data) {
-        inflationData.data = inflationData.data.slice(0, 4);
-      }
-
-      // 处理并过滤失业率数据，只保留最近4个数据点
-      const unemploymentData = unemploymentResponse.data;
-      if (unemploymentData && unemploymentData.data) {
-        unemploymentData.data = unemploymentData.data.slice(0, 4);
-      }
-
-      return {
-        gdp: gdpData,
-        inflation: inflationData,
-        unemployment: unemploymentData,
-        fed_funds_rate: fedFundsRateData,
-        cpi: cpiData,
-        retail_sales: retailSalesData,
-      };
     } catch (error) {
       console.error(`获取经济指标数据时出错: ${error}`);
       return null;

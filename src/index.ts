@@ -13,6 +13,7 @@ import { StrategyAnalysisAgent } from './strategy/StrategyAnalysisAgent.js';
 import { TaskManager, TaskStatus } from './util/TaskManager.js';
 import { Logger } from './util/Logger.js';
 import { executeIntegratedAnalysis } from '@gabriel3615/ta_analysis';
+import { MarketQuery } from './finance/MarketQuery.js';
 
 // 初始化日志记录器，重定向控制台输出到文件
 // 设置为true表示完全静默模式，不会有任何控制台输出，避免干扰Claude Desktop
@@ -22,6 +23,8 @@ Logger.init(true);
 
 // 初始化任务管理器
 const taskManager = new TaskManager();
+const marketQuery = new MarketQuery();
+const fmpQuery = new FMPQuery();
 
 // 初始化 FastMCP 实例
 const server = new FastMCP({
@@ -146,10 +149,13 @@ server.addTool({
   }),
   execute: async args => {
     try {
-      // vix index
       const { types, topNumber } = args;
-      const fmpQuery = new FMPQuery();
+
       const result = {};
+      const fearGreedIndex = marketQuery.getFearGreedIndex();
+      if (fearGreedIndex) {
+        result['fearGreedIndex'] = fearGreedIndex;
+      }
 
       if (types.includes('gainers')) {
         result['biggestGainers'] =
