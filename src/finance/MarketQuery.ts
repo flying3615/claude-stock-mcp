@@ -20,7 +20,7 @@ yahooFinance.setGlobalConfig({
 });
 yahooFinance.suppressNotices(['yahooSurvey']);
 
-enum EconomicIndicator {
+export enum EconomicIndicator {
   GDP = 'GDP',
   Inflation = 'Inflation',
   Unemployment = 'Unemployment',
@@ -34,13 +34,6 @@ export class MarketQuery {
   topTrending: string[] = [];
 
   private _innerQuotesSummaries: QuoteSummary[] = [];
-
-  /**
-   * Get all quotes summaries
-   */
-  get innerQuotesSummaries() {
-    return this._innerQuotesSummaries;
-  }
 
   /**
    * Get trending stocks
@@ -556,10 +549,11 @@ export class MarketQuery {
   // 8. 获取经济指标
   async getEconomicIndicators(
     apiKey: string,
-    ecIndicatore: EconomicIndicator
+    ecIndicators: EconomicIndicator[]
   ): Promise<any | null> {
     try {
-      if (ecIndicatore === EconomicIndicator.GDP) {
+      const result = {};
+      if (ecIndicators.includes(EconomicIndicator.GDP)) {
         // 获取GDP增长率
         const gdpUrl = `https://www.alphavantage.co/query?function=REAL_GDP&interval=quarterly&apikey=${apiKey}`;
         const gdpResponse = await axios.get(gdpUrl);
@@ -568,8 +562,8 @@ export class MarketQuery {
         if (gdpData && gdpData.data) {
           gdpData.data = gdpData.data.slice(0, 4);
         }
-        return gdpData;
-      } else if (ecIndicatore === EconomicIndicator.Inflation) {
+        result['gdpData'] = gdpData;
+      } else if (ecIndicators.includes(EconomicIndicator.Inflation)) {
         // 获取通货膨胀率
         const inflationUrl = `https://www.alphavantage.co/query?function=INFLATION&apikey=${apiKey}`;
         const inflationResponse = await axios.get(inflationUrl);
@@ -580,8 +574,8 @@ export class MarketQuery {
           inflationData.data = inflationData.data.slice(0, 4);
         }
 
-        return inflationData;
-      } else if (ecIndicatore === EconomicIndicator.Unemployment) {
+        result['inflationData'] = inflationData;
+      } else if (ecIndicators.includes(EconomicIndicator.Unemployment)) {
         // 获取失业率
         const unemploymentUrl = `https://www.alphavantage.co/query?function=UNEMPLOYMENT&apikey=${apiKey}`;
         const unemploymentResponse = await axios.get(unemploymentUrl);
@@ -591,8 +585,8 @@ export class MarketQuery {
         if (unemploymentData && unemploymentData.data) {
           unemploymentData.data = unemploymentData.data.slice(0, 4);
         }
-        return unemploymentData;
-      } else if (ecIndicatore === EconomicIndicator.FedFundsRate) {
+        result['unemploymentData'] = unemploymentData;
+      } else if (ecIndicators.includes(EconomicIndicator.FedFundsRate)) {
         // 获取联邦基金利率
         const fedFundsRateUrl = `https://www.alphavantage.co/query?function=FEDERAL_FUNDS_RATE&apikey=${apiKey}`;
         const fedFundsRateResponse = await axios.get(fedFundsRateUrl);
@@ -603,8 +597,8 @@ export class MarketQuery {
           fedFundsRateData.data = fedFundsRateData.data.slice(0, 6);
         }
 
-        return fedFundsRateData;
-      } else if (ecIndicatore === EconomicIndicator.CPI) {
+        result['fedFundsRateData'] = fedFundsRateData;
+      } else if (ecIndicators.includes(EconomicIndicator.CPI)) {
         // 获取CPI
         const cpiUrl = `https://www.alphavantage.co/query?function=CPI&apikey=${apiKey}`;
         const cpiResponse = await axios.get(cpiUrl);
@@ -614,8 +608,8 @@ export class MarketQuery {
         if (cpiData && cpiData.data) {
           cpiData.data = cpiData.data.slice(0, 6);
         }
-        return cpiData;
-      } else if (ecIndicatore === EconomicIndicator.RetailSales) {
+        result['cpiData'] = cpiData;
+      } else if (ecIndicators.includes(EconomicIndicator.RetailSales)) {
         // 获取零售销售数据
         const retailSalesUrl = `https://www.alphavantage.co/query?function=RETAIL_SALES&apikey=${apiKey}`;
         const retailSalesResponse = await axios.get(retailSalesUrl);
@@ -625,10 +619,10 @@ export class MarketQuery {
         if (retailSalesData && retailSalesData.data) {
           retailSalesData.data = retailSalesData.data.slice(0, 6);
         }
-        return retailSalesData;
-      } else {
-        return null;
+        result['retailSalesData'] = retailSalesData;
       }
+
+      return result;
     } catch (error) {
       console.error(`获取经济指标数据时出错: ${error}`);
       return null;

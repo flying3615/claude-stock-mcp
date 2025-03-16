@@ -13,8 +13,7 @@ import { StrategyAnalysisAgent } from './strategy/StrategyAnalysisAgent.js';
 import { TaskManager, TaskStatus } from './util/TaskManager.js';
 import { Logger } from './util/Logger.js';
 import { executeIntegratedAnalysis } from '@gabriel3615/ta_analysis';
-import { MarketQuery } from './finance/MarketQuery.js';
-import { formatTradePlanOutput } from '@gabriel3615/ta_analysis/dist/analysis/FormatTradePlan.js';
+import { EconomicIndicator, MarketQuery } from './finance/MarketQuery.js';
 
 // 初始化日志记录器，重定向控制台输出到文件
 // 设置为true表示完全静默模式，不会有任何控制台输出，避免干扰Claude Desktop
@@ -33,85 +32,9 @@ const server = new FastMCP({
   version: '1.0.0',
 });
 
+// <=====查询外部API=====>
 server.addTool({
-  name: 'get-task-status',
-  description: '查询异步任务的状态',
-  parameters: z.object({
-    taskId: z.string().describe('任务ID'),
-  }),
-  execute: async (args, { log }) => {
-    const { taskId } = args;
-
-    // 获取任务信息
-    const task = taskManager.getTask(taskId);
-
-    if (!task) {
-      throw new UserError(`找不到任务ID: ${taskId}`);
-    }
-
-    log.info(`查询任务状态，任务ID: ${taskId}, 状态: ${task.status}`);
-
-    // 如果任务已完成，直接返回结果（与原始API保持相同格式）
-    if (task.status === TaskStatus.COMPLETED && task.result) {
-      return JSON.stringify(task.result);
-    }
-
-    // 如果任务失败，抛出错误
-    if (task.status === TaskStatus.FAILED) {
-      throw new UserError(`任务执行失败: ${task.error || '未知错误'}`);
-    }
-
-    // 如果任务仍在进行中，返回状态信息
-    return JSON.stringify({
-      taskId: task.id,
-      status: task.status,
-      startTime: task.startTime,
-      message: '任务仍在处理中，请稍后再查询',
-    });
-  },
-});
-
-/**
- * 获取股票分析报告
- *
- * 分析特定股票的交易信号、支撑阻力位和入场策略
- */
-server.addTool({
-  name: 'get-stock-analysis',
-  description: '分析指定股票的交易信号和策略',
-  parameters: z.object({
-    symbol: z.string().describe('股票代码，例如 AAPL 或 MSFT'),
-    weights: z
-      .object({
-        chip: z.number().optional().describe('筹码分析权重 (0-1)'),
-        pattern: z.number().optional().describe('形态分析权重 (0-1)'),
-      })
-      .optional()
-      .describe('分析权重配置'),
-  }),
-  execute: async (args, { log }) => {
-    const { symbol, weights } = args;
-
-    // 验证股票代码
-    if (!symbol || !/^[A-Za-z0-9.]{1,10}$/.test(symbol)) {
-      throw new UserError('请提供有效的股票代码，例如 AAPL 或 MSFT');
-    }
-
-    try {
-      log.info(`开始分析股票 ${symbol.toUpperCase()}`);
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
-      const plan = await executeIntegratedAnalysis(symbol, weights);
-      // TODO call each analysis function and return the result
-      return JSON.stringify(plan);
-    } catch (e) {
-      throw new UserError(`分析股票失败: ${e.message}`);
-    }
-  },
-});
-
-server.addTool({
-  name: 'company-fundamental',
+  name: 'query-company-fundamental',
   description: '获得公司基本信息及评级',
   parameters: z.object({
     symbol: z.string().describe('股票代码，例如 AAPL 或 MSFT'),
@@ -143,7 +66,7 @@ server.addTool({
 });
 
 server.addTool({
-  name: 'market-performance',
+  name: 'query-stock-market-performance',
   description: '今日市场表现',
   parameters: z.object({
     types: z.array(z.enum(['gainers', 'losers', 'top'])).default(['top']),
@@ -182,6 +105,106 @@ server.addTool({
   },
 });
 
+server.addTool({
+  name: 'query-other-market-performance',
+  description: '其他市场表现',
+  parameters: z.object({
+    types: z
+      .array(z.enum(['treasury', 'commodity', 'crypto', 'forex']))
+      .default(['treasury', 'commodity', 'crypto', 'forex']),
+  }),
+  execute: async args => {
+    try {
+      const { types } = args;
+
+      const result = {};
+
+      if (types.includes('treasury')) {
+        result['treasury'] = await marketQuery.getTreasuryYields();
+      }
+
+      if (types.includes('commodity')) {
+        result['commodity'] = await marketQuery.getCommoditiesData();
+      }
+
+      if (types.includes('crypto')) {
+        result['crypto'] = await marketQuery.getCryptoData();
+      }
+
+      if (types.includes('forex')) {
+        result['forex'] = await marketQuery.getForexData();
+      }
+
+      return JSON.stringify(result);
+    } catch (e) {
+      throw new UserError(`获取市场表现失败: ${e.message}`);
+    }
+  },
+});
+
+server.addTool({
+  name: 'query-economic-indicators',
+  description: '获取经济数据指标',
+  parameters: z.object({
+    types: z
+      .array(z.nativeEnum(EconomicIndicator))
+      .default([
+        EconomicIndicator.CPI,
+        EconomicIndicator.GDP,
+        EconomicIndicator.Inflation,
+        EconomicIndicator.FedFundsRate,
+      ]),
+  }),
+  execute: async args => {
+    try {
+      const apiKey = process.env.FMP_API_KEY!;
+      const { types } = args;
+
+      const result = await marketQuery.getEconomicIndicators(apiKey, types);
+
+      return JSON.stringify(result);
+    } catch (e) {
+      throw new UserError(`获取市场表现失败: ${e.message}`);
+    }
+  },
+});
+
+// <======执行股票分析报告=====>
+server.addTool({
+  name: 'execute-stock-analysis',
+  description: '分析指定股票的交易信号和策略',
+  parameters: z.object({
+    symbol: z.string().describe('股票代码，例如 AAPL 或 MSFT'),
+    weights: z
+      .object({
+        chip: z.number().optional().describe('筹码分析权重 (0-1)'),
+        pattern: z.number().optional().describe('形态分析权重 (0-1)'),
+      })
+      .optional()
+      .describe('分析权重配置'),
+  }),
+  execute: async (args, { log }) => {
+    const { symbol, weights } = args;
+
+    // 验证股票代码
+    if (!symbol || !/^[A-Za-z0-9.]{1,10}$/.test(symbol)) {
+      throw new UserError('请提供有效的股票代码，例如 AAPL 或 MSFT');
+    }
+
+    try {
+      log.info(`开始分析股票 ${symbol.toUpperCase()}`);
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-expect-error
+      const plan = await executeIntegratedAnalysis(symbol, weights);
+      // TODO call each analysis function and return the result
+      return JSON.stringify(plan);
+    } catch (e) {
+      throw new UserError(`分析股票失败: ${e.message}`);
+    }
+  },
+});
+
+// <======启动异步任务工具=====>
 server.addTool({
   name: 'start-bull-bear-scan',
   description: '开始扫描市场中股票的多头和空头信号（异步任务）',
@@ -260,6 +283,45 @@ server.addTool({
 
     // 立即返回任务ID
     return JSON.stringify({ taskId, status: TaskStatus.PENDING });
+  },
+});
+
+// <=====任务查询工具=====>
+server.addTool({
+  name: 'get-task-status',
+  description: '查询异步任务的状态',
+  parameters: z.object({
+    taskId: z.string().describe('任务ID'),
+  }),
+  execute: async (args, { log }) => {
+    const { taskId } = args;
+
+    // 获取任务信息
+    const task = taskManager.getTask(taskId);
+
+    if (!task) {
+      throw new UserError(`找不到任务ID: ${taskId}`);
+    }
+
+    log.info(`查询任务状态，任务ID: ${taskId}, 状态: ${task.status}`);
+
+    // 如果任务已完成，直接返回结果（与原始API保持相同格式）
+    if (task.status === TaskStatus.COMPLETED && task.result) {
+      return JSON.stringify(task.result);
+    }
+
+    // 如果任务失败，抛出错误
+    if (task.status === TaskStatus.FAILED) {
+      throw new UserError(`任务执行失败: ${task.error || '未知错误'}`);
+    }
+
+    // 如果任务仍在进行中，返回状态信息
+    return JSON.stringify({
+      taskId: task.id,
+      status: task.status,
+      startTime: task.startTime,
+      message: '任务仍在处理中，请稍后再查询',
+    });
   },
 });
 
