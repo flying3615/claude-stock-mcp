@@ -8,12 +8,13 @@
 
 import { FastMCP, UserError } from 'fastmcp';
 import { z } from 'zod';
-import { FMPQuery } from './finance/FMPQuery.js';
 import { StrategyAnalysisAgent } from './strategy/StrategyAnalysisAgent.js';
 import { TaskManager, TaskStatus } from './util/TaskManager.js';
 import { Logger } from './util/Logger.js';
 import { executeIntegratedAnalysis } from '@gabriel3615/ta_analysis';
 import { EconomicIndicator, MarketQuery } from './finance/MarketQuery.js';
+import { FMPQuery } from './finance/FMPQuery.js';
+import { AlphaVantageQuery } from './finance/AlphaVantageQuery.js';
 
 // 初始化日志记录器，重定向控制台输出到文件
 // 设置为true表示完全静默模式，不会有任何控制台输出，避免干扰Claude Desktop
@@ -25,6 +26,7 @@ Logger.init(true);
 const taskManager = new TaskManager();
 const marketQuery = new MarketQuery();
 const fmpQuery = new FMPQuery();
+const avQuery = new AlphaVantageQuery();
 
 // 初始化 FastMCP 实例
 const server = new FastMCP({
@@ -35,18 +37,17 @@ const server = new FastMCP({
 // <=====查询外部API=====>
 server.addTool({
   name: 'query-company-fundamental',
-  description: '获得公司基本信息及评级',
+  description: '获得公司基本信息',
   parameters: z.object({
     symbol: z.string().describe('股票代码，例如 AAPL 或 MSFT'),
     metrics: z
-      .array(
-        z.enum(['overview', 'income', 'balance', 'cash', 'ratios', 'ratings'])
-      )
+      .array(z.enum(['overview', 'income', 'balance', 'cash', 'earnings']))
       .optional()
-      .describe('需要获取的指标列表概况，收入，资产负债表，现金流量表，比率'),
+      .describe('需要获取的指标列表概况，收入，资产负债表，现金流量表'),
   }),
   execute: async (args, { log }) => {
     const { symbol, metrics } = args;
+    const apiKey = process.env.ALPHA_VANTAGE_API_KEY!;
 
     // 验证股票代码
     if (!symbol || !/^[A-Za-z0-9.]{1,10}$/.test(symbol)) {
@@ -54,7 +55,7 @@ server.addTool({
     }
     try {
       log.info(`开始获得公司基本面信息 ${symbol.toUpperCase()}`);
-      const result = await new FMPQuery().companyFundamentals({
+      const result = await avQuery.companyFundamentals(apiKey, {
         symbol,
         metrics,
       });
@@ -157,10 +158,10 @@ server.addTool({
   }),
   execute: async args => {
     try {
-      const apiKey = process.env.FMP_API_KEY!;
+      const apiKey = process.env.ALPHA_VANTAGE_API_KEY!;
       const { types } = args;
 
-      const result = await marketQuery.getEconomicIndicators(apiKey, types);
+      const result = await avQuery.getEconomicIndicators(apiKey, types);
 
       return JSON.stringify(result);
     } catch (e) {

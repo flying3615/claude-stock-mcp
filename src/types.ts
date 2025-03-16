@@ -110,14 +110,7 @@ export interface Strategy<T> {
 
 export interface CompanyFundamentalsArgs {
   symbol: string;
-  metrics?: (
-    | 'overview'
-    | 'income'
-    | 'balance'
-    | 'cash'
-    | 'ratios'
-    | 'ratings'
-  )[];
+  metrics?: ('overview' | 'income' | 'balance' | 'cash' | 'earnings')[];
 }
 
 export interface StockQueryResult {
