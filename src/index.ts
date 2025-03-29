@@ -11,10 +11,14 @@ import { z } from 'zod';
 import { StrategyAnalysisAgent } from './strategy/StrategyAnalysisAgent.js';
 import { TaskManager, TaskStatus } from './util/TaskManager.js';
 import { Logger } from './util/Logger.js';
-import { executeIntegratedAnalysis } from '@gabriel3615/ta_analysis';
+import {
+  executeIntegratedAnalysis,
+  fetchChartData,
+} from '@gabriel3615/ta_analysis';
 import { EconomicIndicator, MarketQuery } from './finance/MarketQuery.js';
 import { FMPQuery } from './finance/FMPQuery.js';
 import { AlphaVantageQuery } from './finance/AlphaVantageQuery.js';
+import { timeFrameConfigs } from './config.js';
 
 // 初始化日志记录器，重定向控制台输出到文件
 // 设置为true表示完全静默模式，不会有任何控制台输出，避免干扰Claude Desktop
@@ -162,6 +166,7 @@ server.addTool({
       .object({
         chip: z.number().optional().describe('筹码分析权重 (0-1)'),
         pattern: z.number().optional().describe('形态分析权重 (0-1)'),
+        weight: z.number().optional().describe('成交量分析权重 (0-1)'),
       })
       .optional()
       .describe('分析权重配置'),
@@ -179,8 +184,37 @@ server.addTool({
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-expect-error
       const plan = await executeIntegratedAnalysis(symbol, weights);
-      // TODO call each analysis function and return the result
-      return JSON.stringify(plan);
+      let fullExchangeName =
+        await marketQuery.getFullExchangeNameFromQuote(symbol);
+      fullExchangeName = fullExchangeName.toLowerCase().includes('nasdaq')
+        ? 'NASDAQ'
+        : fullExchangeName;
+
+      const stockCode = `${fullExchangeName}:${symbol}`;
+      console.log(
+        `console获取股票代码 ${stockCode}, ${JSON.stringify(timeFrameConfigs)}`
+      );
+      const chartImages = await fetchChartData(stockCode, timeFrameConfigs);
+      console.log('chartImages', chartImages);
+
+      log.info('获取股票图表数据成');
+      const chartImagesData = chartImages.map(image => {
+        return {
+          type: 'image' as const,
+          data: image.imageBase64,
+          mimeType: 'image/png',
+        };
+      });
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(plan),
+          },
+          ...chartImagesData,
+        ],
+      };
     } catch (e) {
       throw new UserError(`分析股票失败: ${e.message}`);
     }

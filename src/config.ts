@@ -1,4 +1,5 @@
 import { ConditionOptionsWithSrc, Weight } from './types.js';
+import { TimeFrameConfig } from '@gabriel3615/ta_analysis';
 
 export const sourceIds = [
   // 'aggressive_small_caps',
@@ -38,3 +39,24 @@ export const fetchConditionForMarket: ConditionOptionsWithSrc = {
   sourceIds: sourceIds, // 从哪些板块获取
   breakout: true, // 检测突破
 };
+
+export const timeFrameConfigs: TimeFrameConfig[] = [
+  {
+    interval: '1D',
+    studies: [
+      { name: 'Volume' },
+      { name: 'Relative Strength Index' },
+      { name: 'Directional Movement' },
+    ],
+  },
+  {
+    interval: '1h',
+    studies: [
+      { name: 'MACD' },
+      { name: 'Super Trend' },
+      {
+        name: 'Volume Profile Visible Range',
+      },
+    ],
+  },
+];
