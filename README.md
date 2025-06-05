@@ -1,75 +1,75 @@
-# 股票分析 MCP 服务器
+# Stock Analysis MCP Server
 
-这是一个基于 Model Context Protocol (MCP) 的服务器，为 Claude Desktop 提供股票分析工具。该服务器集成了现有的股票分析功能，包括筹码分析、形态分析、趋势反转检测和市场扫描功能。
+This is a Model Context Protocol (MCP) server that provides stock analysis tools for Claude Desktop. The server integrates existing stock analysis features, including chip distribution analysis, pattern analysis, trend reversal detection, and market scanning capabilities.
 
-- 股票数据查询: Yahoo Finance
-- 公司基本面数据查询: 需要 FMP API_KEY (https://site.financialmodelingprep.com/)
+- Stock data query: Yahoo Finance
+- Company fundamental data query: Requires FMP API_KEY (https://site.financialmodelingprep.com/)
 
-## 功能特点
+## Features
 
-- 完全兼容 Claude Desktop 的 MCP 接口
-- 提供多种股票分析工具:
-  - `get-stock-analysis`: 分析特定股票
-  - `company-fundamental`: 查询公司基本面数据
-  - `start-bull-bear-scan`: 扫描市场中的多头和空头信号（异步任务）
-  - `start-strong-signal-scan`: 扫描市场中的强势股票（异步任务）
-  - `start-hot-stock-scan`: 扫描市场中排名靠前的热门股票（异步任务）
-  - `get-task-status`: 查询异步任务的状态和结果
-  - `market-performance`: 今日市场表现，查询涨跌幅，交易量最大的股票
-- 支持长时间运行的异步分析任务
-- 集成了全面的股票分析功能
-- 生成详细的交易计划报告
+- Fully compatible with Claude Desktop's MCP interface
+- Provides various stock analysis tools:
+  - `get-stock-analysis`: Analyze specific stocks
+  - `company-fundamental`: Query company fundamental data
+  - `start-bull-bear-scan`: Scan the market for bullish and bearish signals (asynchronous task)
+  - `start-strong-signal-scan`: Scan the market for strong momentum stocks (asynchronous task)
+  - `start-hot-stock-scan`: Scan the market for top trending stocks (asynchronous task)
+  - `get-task-status`: Query the status and results of asynchronous tasks
+  - `market-performance`: Today's market performance, query stocks with biggest gains/losses and highest volume
+- Support for long-running asynchronous analysis tasks
+- Integration of comprehensive stock analysis functions
+- Generation of detailed trading plan reports
 
-## 安装与配置
+## Installation and Configuration
 
-### 前提条件
+### Prerequisites
 
 - Node.js >= 16.0.0
 - npm >= 7.0.0
 - Claude Desktop
 
-### 本地安装与运行
+### Local Installation and Running
 
-1. 克隆代码库:
+1. Clone the repository:
    ```bash
    git clone https://github.com/yourusername/claude-stock-mcp.git
    cd claude-stock-mcp
    ```
 
-2. 安装依赖:
+2. Install dependencies:
    ```bash
    npm install
    ```
 
-3. 在开发模式下测试服务器:
+3. Test the server in development mode:
    ```bash
    npm run dev
    ```
    
-   或使用 MCP Inspector:
+   Or use MCP Inspector:
    ```bash
    npm run inspect
    ```
 
-4. 构建项目:
+4. Build the project:
    ```bash
    npm run build
    ```
 
-5. 启动服务器:
+5. Start the server:
    ```bash
    npm start
    ```
 
-### 配置 Claude Desktop
+### Configure Claude Desktop
 
-1. 创建或编辑 Claude Desktop 配置文件:
+1. Create or edit the Claude Desktop configuration file:
    ```bash
    # macOS
    open -a "TextEdit" ~/Library/Application\ Support/Claude/claude_desktop_config.json
    ```
 
-2. 添加服务器配置:
+2. Add the server configuration:
    ```json
    {
      "mcpServers": {
@@ -85,97 +85,97 @@
      }
    }
    ```
-   注意: 必须使用绝对路径，并替换"你的用户名"为实际用户名。
+   Note: You must use absolute paths and replace "yourusername" with your actual username.
 
-3. 保存配置文件并重启 Claude Desktop。
+3. Save the configuration file and restart Claude Desktop.
 
-## 使用方法
+## Usage
 
-服务器配置好后，你可以在 Claude Desktop 中使用以下方式访问股票分析功能:
+Once the server is configured, you can access the stock analysis features in Claude Desktop using the following approaches:
 
-### 分析股票
+### Analyze Stocks
 
-示例问题:
-- "请分析苹果公司的股票表现"
-- "我想了解特斯拉股票（TSLA）的交易信号"
-- "帮我分析 NVDA 的入场时机和止损位"
+Example questions:
+- "Please analyze Apple's stock performance"
+- "I want to understand the trading signals for Tesla stock (TSLA)"
+- "Help me analyze entry points and stop-loss levels for NVDA"
 
-Claude 将使用 `get-stock-analysis` 工具分析特定股票。
+Claude will use the `get-stock-analysis` tool to analyze specific stocks.
 
-### 使用异步市场扫描功能
+### Using Asynchronous Market Scanning Features
 
-示例问题:
-- "请扫描市场，找出目前处于支撑位的多头信号股票"
-- "帮我找出市场中最强势的股票"
-- "扫描并列出近期热门股票"
+Example questions:
+- "Please scan the market for bullish signal stocks currently at support levels"
+- "Help me find the strongest momentum stocks in the market"
+- "Scan and list recent hot stocks"
 
-Claude 将使用相应的异步任务工具，例如 `start-bull-bear-scan`，并返回一个任务ID。你可以使用该ID查询任务状态和结果。
+Claude will use the appropriate asynchronous task tools, such as `start-bull-bear-scan`, and return a task ID. You can use this ID to query task status and results.
 
-异步任务使用方法:
-1. 启动一个异步扫描任务，获取任务ID
-2. 使用 `get-task-status` 查询任务状态
-3. 当任务完成时，获取分析结果
+How to use asynchronous tasks:
+1. Start an asynchronous scan task and get a task ID
+2. Use `get-task-status` to check the task status
+3. When the task is complete, retrieve the analysis results
 
-这种异步方式可以处理长时间运行的复杂市场分析，避免请求超时问题。
+This asynchronous approach can handle complex market analyses that run for an extended period, avoiding request timeout issues.
 
-## 开发测试
+## Development Testing
 
-fastmcp提供了两种便捷的测试方式：
+fastmcp provides two convenient ways to test:
 
-1. 使用命令行模式测试：
+1. Using command line mode:
    ```bash
    npm run dev
    ```
 
-2. 使用Web界面测试：
+2. Using web interface:
    ```bash
    npm run inspect
    ```
 
-这些命令会启动相应的测试环境，让你可以直接与MCP服务器交互，无需Claude Desktop。
+These commands will start the respective test environments, allowing you to interact directly with the MCP server without requiring Claude Desktop.
 
-## 项目结构
+## Project Structure
 
 ```
 claude-stock-mcp/
 ├── src/
-│   ├── index.ts                # MCP 服务器主文件
-│   ├── analysis/               # 股票分析相关代码
+│   ├── index.ts                # MCP server main file
+│   ├── analysis/               # Stock analysis related code
 │   │   ├── IntegratedAnalysis.ts
 │   │   ├── IntegratedAnalysisTypes.ts
-│   │   ├── chip/               # 筹码分析
-│   │   ├── patterns/           # 形态分析
-│   │   └── trendReversal/      # 趋势反转分析
-│   ├── finance/                # 金融数据相关
+│   │   ├── chip/               # Chip distribution analysis
+│   │   ├── patterns/           # Pattern analysis
+│   │   └── trendReversal/      # Trend reversal analysis
+│   ├── finance/                # Financial data related
 │   │   ├── Conditions.ts
 │   │   ├── Evaluator.ts
-│   │   ├── FMPQuery.ts         # Financial Modeling Prep API 查询
-│   │   ├── MarketQuery.ts      # 市场数据查询
-│   │   └── __tests__/          # 测试文件
-│   ├── strategy/               # 策略分析
+│   │   ├── FMPQuery.ts         # Financial Modeling Prep API query
+│   │   ├── MarketQuery.ts      # Market data query
+│   │   └── __tests__/          # Test files
+│   ├── strategy/               # Strategy analysis
 │   │   ├── BreakoutDetector.ts
 │   │   ├── BullOrBearDetector.ts
 │   │   └── StrategyAnalysisAgent.ts
-│   ├── types.ts                # 类型定义
-│   ├── config.ts               # 配置文件
-│   └── util/                   # 工具函数
-│       ├── TaskManager.ts      # 异步任务管理
-│       ├── Logger.ts           # 日志处理
-│       └── util.ts             # 通用工具函数
-├── dist/                       # 编译输出
-├── logs/                       # 日志文件目录
+│   ├── types.ts                # Type definitions
+│   ├── config.ts               # Configuration file
+│   └── util/                   # Utility functions
+│       ├── TaskManager.ts      # Asynchronous task management
+│       ├── Logger.ts           # Log handling
+│       └── util.ts             # Common utility functions
+├── dist/                       # Compiled output
+├── logs/                       # Log file directory
 ├── package.json
 └── tsconfig.json
 ```
 
-## 日志系统
+## Logging System
 
-为了避免 console 输出干扰 Claude Desktop，项目使用自定义日志系统：
+To avoid console output interfering with Claude Desktop, the project uses a custom logging system:
 
-- 所有控制台输出被重定向到日志文件
-- 日志文件位于 `logs/` 目录
-- 在 Claude Desktop 环境中启用静默模式，禁止所有控制台输出
+- All console outputs are redirected to log files
+- Log files are located in the `logs/` directory
+- Silent mode is enabled in the Claude Desktop environment, preventing all console output
 
-## 许可证
+## License
 
 MIT
