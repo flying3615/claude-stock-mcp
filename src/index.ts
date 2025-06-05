@@ -70,33 +70,15 @@ server.addTool({
   name: 'query-stock-market-performance',
   description: '今日市场表现',
   parameters: z.object({
-    types: z.array(z.enum(['gainers', 'losers', 'top'])).default(['top']),
-    topNumber: z.number().optional().default(5).describe('显示前几名'),
+    topNumber: z.number().optional().default(10).describe('显示前几名'),
   }),
   execute: async args => {
     try {
-      const { types, topNumber } = args;
+      const { topNumber } = args;
 
       const result = {};
-      const fearGreedIndex = await marketQuery.getFearGreedIndex();
-      if (fearGreedIndex) {
-        result['fearGreedIndex'] = fearGreedIndex;
-      }
-
-      if (types.includes('gainers')) {
-        result['biggestGainers'] =
-          await fmpQuery.queryBiggestGainers(topNumber);
-      }
-
-      if (types.includes('losers')) {
-        result['biggestLosers'] = await fmpQuery.queryBiggestLosers(topNumber);
-      }
-
-      if (types.includes('top')) {
-        result['topPerformers'] =
-          await fmpQuery.queryTopTradedStocks(topNumber);
-      }
-
+      result['fearGreedIndex'] = await marketQuery.getFearGreedIndex();
+      result['topTraded'] = await fmpQuery.queryTopTradedStocks(topNumber);
       result['indexes'] = await marketQuery.getMarketIndices();
 
       return JSON.stringify(result);
@@ -173,7 +155,7 @@ server.addTool({
 // <======执行股票分析报告=====>
 server.addTool({
   name: 'execute-stock-analysis',
-  description: '分析指定股票的交易信号和策略',
+  description: '分析指定股票走势',
   parameters: z.object({
     symbol: z.string().describe('股票代码，例如 AAPL 或 MSFT'),
     weights: z

@@ -79,7 +79,8 @@ This is a Model Context Protocol (MCP) server that provides stock analysis tools
          "@gabriel3615/claude-stock-analysis-mcp@latest"
         ],
         "env": {
-         "FMP_API_KEY": "KEY_HERE"
+         "FMP_API_KEY": "KEY_HERE",
+         "APLPVANTAGE_API_KEY": "KEY_HERE"
         }
        }
      }
