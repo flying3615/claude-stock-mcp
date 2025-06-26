@@ -210,6 +210,7 @@ server.addTool({
 
   execute: async (args, { log }) => {
     const { minVolume, sourceIds } = args;
+    const normalizedSourceIds = Array.isArray(sourceIds) ? sourceIds : sourceIds ? [sourceIds] : [];
     // 使用新的任务包装器启动异步任务
     const taskId = taskManager.startAsyncTask(
       // 定义要执行的异步任务
@@ -217,7 +218,7 @@ server.addTool({
         log.info(`开始扫描市场中股票的多头和空头信号`);
         return await new StrategyAnalysisAgent().checkBullBearWithSR({
           minVolume,
-          sourceIds,
+          sourceIds: normalizedSourceIds,
         });
       },
       // 传递日志记录器
