@@ -15,9 +15,10 @@
     "prepare": "npm run build",
     "lint": "npx eslint src",
     "lint:fix": "npm run lint -- --fix",
-    "publish:patch": "npm version patch && npm publish --access public",
-    "publish:minor": "npm version minor && npm publish --access public",
-    "publish:major": "npm version major && npm publish --access public"
+    "release:patch": "npm version patch",
+    "release:minor": "npm version minor",
+    "release:major": "npm version major",
+    "test:yahoo-news": "npm run build && node dist/finance/news/YahooNewsScraper.test.js"
   },
   "keywords": [
     "claude",
@@ -29,10 +30,11 @@
   "dependencies": {
     "@eslint/js": "^9.21.0",
     "@gabriel3615/ta_analysis": "^1.2.11",
-    "axios": "^1.8.3",
+    "axios": "^1.11.0",
+    "cheerio": "^1.1.2",
     "eslint-config-prettier": "^10.0.2",
     "eslint-plugin-prettier": "^5.2.3",
-    "fastmcp": "^1.20.2",
+    "fastmcp": "^3.8.0",
     "globals": "^16.0.0",
     "lodash": "^4.17.21",
     "node-fetch": "^3.3.2",
