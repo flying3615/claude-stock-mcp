@@ -12,9 +12,8 @@ import { StrategyAnalysisAgent } from './strategy/StrategyAnalysisAgent.js';
 import { TaskManager, TaskStatus } from './util/TaskManager.js';
 import { Logger } from './util/Logger.js';
 import {
-  buildMachineReadableSummary,
-  executeIntegratedAnalysis,
-  fetchChartData,
+  executeIntegratedAnalysisV2,
+  formatTradePlanOutput,
 } from '@gabriel3615/ta_analysis';
 import { EconomicIndicator, MarketQuery } from './finance/MarketQuery.js';
 import { FMPQuery } from './finance/FMPQuery.js';
@@ -174,7 +173,7 @@ server.addTool({
 
     try {
       log.info(`开始分析股票 ${symbol.toUpperCase()}`);
-      const plan = await executeIntegratedAnalysis(symbol);
+      const plan = await executeIntegratedAnalysisV2(symbol);
       let fullExchangeName =
         await marketQuery.getFullExchangeNameFromQuote(symbol);
       fullExchangeName = fullExchangeName.toLowerCase().includes('nasdaq')
@@ -202,7 +201,8 @@ server.addTool({
         content: [
           {
             type: 'text',
-            text: buildMachineReadableSummary(plan),
+            // text: buildMachineReadableSummary(plan),
+            text: formatTradePlanOutput(plan),
           },
           // ...chartImagesData,
         ],
