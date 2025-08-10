@@ -11,10 +11,14 @@ import { z } from 'zod';
 import { StrategyAnalysisAgent } from './strategy/StrategyAnalysisAgent.js';
 import { TaskManager, TaskStatus } from './util/TaskManager.js';
 import { Logger } from './util/Logger.js';
-import { executeIntegratedAnalysis } from '@gabriel3615/ta_analysis';
+import {
+  executeIntegratedAnalysisV2,
+  formatTradePlanOutput,
+} from '@gabriel3615/ta_analysis';
 import { EconomicIndicator, MarketQuery } from './finance/MarketQuery.js';
 import { FMPQuery } from './finance/FMPQuery.js';
 import { AlphaVantageQuery } from './finance/AlphaVantageQuery.js';
+import { timeFrameConfigs } from './config.js';
 
 // 初始化日志记录器，重定向控制台输出到文件
 // 设置为true表示完全静默模式，不会有任何控制台输出，避免干扰Claude Desktop
@@ -158,16 +162,9 @@ server.addTool({
   description: '分析指定股票走势',
   parameters: z.object({
     symbol: z.string().describe('股票代码，例如 AAPL 或 MSFT'),
-    weights: z
-      .object({
-        chip: z.number().optional().describe('筹码分析权重 (0-1)'),
-        pattern: z.number().optional().describe('形态分析权重 (0-1)'),
-      })
-      .optional()
-      .describe('分析权重配置'),
   }),
   execute: async (args, { log }) => {
-    const { symbol, weights } = args;
+    const { symbol } = args;
 
     // 验证股票代码
     if (!symbol || !/^[A-Za-z0-9.]{1,10}$/.test(symbol)) {
@@ -176,11 +173,40 @@ server.addTool({
 
     try {
       log.info(`开始分析股票 ${symbol.toUpperCase()}`);
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
-      const plan = await executeIntegratedAnalysis(symbol, weights);
-      // TODO call each analysis function and return the result
-      return JSON.stringify(plan);
+      const plan = await executeIntegratedAnalysisV2(symbol);
+      let fullExchangeName =
+        await marketQuery.getFullExchangeNameFromQuote(symbol);
+      fullExchangeName = fullExchangeName.toLowerCase().includes('nasdaq')
+        ? 'NASDAQ'
+        : fullExchangeName;
+
+      const stockCode = `${fullExchangeName}:${symbol}`;
+      console.log(
+        `console获取股票代码 ${stockCode}, ${JSON.stringify(timeFrameConfigs)}`
+      );
+
+      // const chartImages = await fetchChartData(stockCode, timeFrameConfigs);
+      // console.log('chartImages', chartImages);
+
+      // log.info('获取股票图表数据成');
+      // const chartImagesData = chartImages.map(image => {
+      //   return {
+      //     type: 'image' as const,
+      //     data: image.imageBase64,
+      //     mimeType: 'image/png',
+      //   };
+      // });
+
+      return {
+        content: [
+          {
+            type: 'text',
+            // text: buildMachineReadableSummary(plan),
+            text: formatTradePlanOutput(plan),
+          },
+          // ...chartImagesData,
+        ],
+      };
     } catch (e) {
       throw new UserError(`分析股票失败: ${e.message}`);
     }
@@ -210,7 +236,11 @@ server.addTool({
 
   execute: async (args, { log }) => {
     const { minVolume, sourceIds } = args;
-    const normalizedSourceIds = Array.isArray(sourceIds) ? sourceIds : sourceIds ? [sourceIds] : [];
+    const normalizedSourceIds = Array.isArray(sourceIds)
+      ? sourceIds
+      : sourceIds
+        ? [sourceIds]
+        : [];
     // 使用新的任务包装器启动异步任务
     const taskId = taskManager.startAsyncTask(
       // 定义要执行的异步任务
@@ -319,16 +349,7 @@ setInterval(
 
 // 启动服务器
 await server.start({
-  transportType: 'stdio', // 开发模式使用stdio
-  // 生产模式应该使用SSE
-  // transportType: "sse",
-  // sse: {
-  //   endpoint: "/sse",
-  //   port: 3000,
-  // }
+  transportType: 'stdio',
 });
-
-// console.log('股票分析 MCP 服务器已启动');
-// console.log(`可用工具: ${server.getToolNames().join(', ')}`);
 
 export default server;

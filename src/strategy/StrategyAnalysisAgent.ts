@@ -4,7 +4,7 @@ import { checkBullOrBearRecently } from './BullOrBearDetector.js';
 import { BreakoutDetector } from './BreakoutDetector.js';
 import { isNearLevel } from '../util/util.js';
 import { ConditionOptionsWithSrc } from '../types.js';
-import { executeIntegratedAnalysis } from '@gabriel3615/ta_analysis';
+import { executeIntegratedAnalysisV2 } from '@gabriel3615/ta_analysis';
 
 export class StrategyAnalysisAgent {
   marketQuery = new MarketQuery();
@@ -169,7 +169,7 @@ export class StrategyAnalysisAgent {
     const strongSignalResult = [];
 
     for (const quoteSummary of gainersWithScore) {
-      const integratedResult = await executeIntegratedAnalysis(
+      const integratedResult = await executeIntegratedAnalysisV2(
         quoteSummary.symbol
       );
       if (integratedResult.signalStrength === 'strong') {
