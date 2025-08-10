@@ -1,5 +1,6 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import { chromium } from 'playwright';
 
 export interface YahooNewsArticleMeta {
   title: string;
@@ -21,53 +22,65 @@ export async function scrapeYahooMarketNewsMeta(): Promise<
   YahooNewsArticleMeta[]
 > {
   const url = 'https://finance.yahoo.com/news/';
-  const res = await axios.get(url);
-
-  const $ = cheerio.load(res.data);
-  const articles: YahooNewsArticleMeta[] = [];
-
-  $('li.stream-item.story-item').each((_, el) => {
-    const contentDiv = $(el).find('div.content');
-    const titleEl = contentDiv.find('a[title]');
-    const title = titleEl.attr('title')?.trim() || '';
-    const urlPath = titleEl.attr('href');
-    const urlFull =
-      urlPath && urlPath.startsWith('http')
-        ? urlPath
-        : `https://finance.yahoo.com${urlPath}`;
-    // Extract publisher and date from publishing class
-    let publisher = '';
-    let date = '';
-    const publishingDiv = $(el).find('div.publishing');
-    if (publishingDiv.length) {
-      // Example: "Yahoo Finance • 14 hours ago"
-      const publishingText = publishingDiv.text();
-      const parts = publishingText.split('•');
-      if (parts.length === 2) {
-        publisher = parts[0].trim();
-        date = parts[1].trim();
-      } else {
-        publisher = publishingText.trim();
-      }
-    }
-    // Extract stock symbols from taxonomy-links
-    const stockSymbols: string[] = [];
-    $(el)
-      .find('div.taxonomy-links a.ticker')
-      .each((_, tickerEl) => {
-        const symbol = $(tickerEl).attr('aria-label')?.trim();
-        if (symbol) stockSymbols.push(symbol);
-      });
-    if (title && urlFull) {
-      articles.push({
-        title,
-        url: urlFull,
-        publisher,
-        date,
-        stockSymbols,
-      });
-    }
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({
+    userAgent:
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    viewport: { width: 1280, height: 800 },
   });
+  const page = await context.newPage();
+  try {
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 60000 });
+    // Wait for news list to load, but with longer timeout and error handling
+    await page.waitForSelector('li.stream-item.story-item', { timeout: 60000 });
+  } catch (err) {
+    console.error('Error loading Yahoo Finance news page:', err);
+    await browser.close();
+    return [];
+  }
+  const articles: YahooNewsArticleMeta[] = await page.$$eval(
+    'li.stream-item.story-item',
+    items => {
+      return items
+        .map(el => {
+          const contentDiv = el.querySelector('div.content');
+          const titleEl = contentDiv?.querySelector('a[title]');
+          const title = titleEl?.getAttribute('title')?.trim() || '';
+          const urlPath = titleEl?.getAttribute('href') || '';
+          const urlFull = urlPath.startsWith('http')
+            ? urlPath
+            : `https://finance.yahoo.com${urlPath}`;
+          // Publisher and date
+          let publisher = '';
+          let date = '';
+          const publishingDiv = el.querySelector('div.publishing');
+          if (publishingDiv) {
+            const publishingText = publishingDiv.textContent || '';
+            const parts = publishingText.split('•');
+            if (parts.length === 2) {
+              publisher = parts[0].trim();
+              date = parts[1].trim();
+            } else {
+              publisher = publishingText.trim();
+            }
+          }
+          // Stock symbols
+          const stockSymbols: string[] = [];
+          el.querySelectorAll('div.taxonomy-links a.ticker').forEach(
+            tickerEl => {
+              const symbol = tickerEl.getAttribute('aria-label')?.trim();
+              if (symbol) stockSymbols.push(symbol);
+            }
+          );
+          if (title && urlFull) {
+            return { title, url: urlFull, publisher, date, stockSymbols };
+          }
+          return null;
+        })
+        .filter(Boolean) as any;
+    }
+  );
+  await browser.close();
   return articles;
 }
 
@@ -81,10 +94,14 @@ export async function scrapeYahooNewsArticleContent(
 ): Promise<YahooNewsArticleContent> {
   let res;
   try {
-    res = await axios.get(url);
+    res = await axios.get(url, {
+      headers: {
+        'Accept-Encoding': 'identity',
+      },
+    });
   } catch (err) {
-    console.error('Error fetching Yahoo Finance article:', err);
-    return { text: '' };
+    console.error(err);
+    return { text: `Error fetching Yahoo Finance article ${url}` };
   }
   const $ = cheerio.load(res.data);
   // Yahoo Finance article text is in <div class="body">, paragraphs in <p>
