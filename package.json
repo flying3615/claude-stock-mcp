@@ -15,9 +15,9 @@
     "prepare": "npm run build",
     "lint": "npx eslint src",
     "lint:fix": "npm run lint -- --fix",
-    "publish:patch": "npm version patch && npm publish --access public",
-    "publish:minor": "npm version minor && npm publish --access public",
-    "publish:major": "npm version major && npm publish --access public"
+    "publish:patch": "npm version patch",
+    "publish:minor": "npm version minor",
+    "publish:major": "npm version major"
   },
   "keywords": [
     "claude",
@@ -28,7 +28,7 @@
   ],
   "dependencies": {
     "@eslint/js": "^9.21.0",
-    "@gabriel3615/ta_analysis": "^1.2.11",
+    "@gabriel3615/ta_analysis": "^2.0.3",
     "axios": "^1.8.3",
     "eslint-config-prettier": "^10.0.2",
     "eslint-plugin-prettier": "^5.2.3",
