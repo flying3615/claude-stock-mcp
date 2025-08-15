@@ -12,13 +12,14 @@ import { StrategyAnalysisAgent } from './strategy/StrategyAnalysisAgent.js';
 import { TaskManager, TaskStatus } from './util/TaskManager.js';
 import { Logger } from './util/Logger.js';
 import {
+  buildMachineReadableSummary,
+  executeBatchAnalysis,
   executeIntegratedAnalysisV2,
   formatTradePlanOutput,
 } from '@gabriel3615/ta_analysis';
 import { EconomicIndicator, MarketQuery } from './finance/MarketQuery.js';
 import { FMPQuery } from './finance/FMPQuery.js';
 import { AlphaVantageQuery } from './finance/AlphaVantageQuery.js';
-import { timeFrameConfigs } from './config.js';
 
 // 初始化日志记录器，重定向控制台输出到文件
 // 设置为true表示完全静默模式，不会有任何控制台输出，避免干扰Claude Desktop
@@ -159,57 +160,50 @@ server.addTool({
 // <======执行股票分析报告=====>
 server.addTool({
   name: 'execute-stock-analysis',
-  description: '分析指定股票走势',
+  description: '分析指定股票走势（支持单个或多个股票代码）',
   parameters: z.object({
-    symbol: z.string().describe('股票代码，例如 AAPL 或 MSFT'),
+    symbol: z.union([
+      z.string().describe('股票代码，例如 AAPL 或 MSFT'),
+      z.array(z.string()).describe('多个股票代码，例如 ["AAPL", "MSFT"]'),
+    ]),
   }),
   execute: async (args, { log }) => {
     const { symbol } = args;
 
-    // 验证股票代码
-    if (!symbol || !/^[A-Za-z0-9.]{1,10}$/.test(symbol)) {
-      throw new UserError('请提供有效的股票代码，例如 AAPL 或 MSFT');
+    // 单个股票代码
+    if (typeof symbol === 'string') {
+      if (!symbol || !/^[A-Za-z0-9.]{1,10}$/.test(symbol)) {
+        throw new UserError('请提供有效的股票代码，例如 AAPL 或 MSFT');
+      }
+      try {
+        log.info(`开始分析股票 ${symbol.toUpperCase()}`);
+        const plan = await executeIntegratedAnalysisV2(symbol);
+        return formatTradePlanOutput(plan);
+      } catch (e) {
+        throw new UserError(`分析股票失败: ${e.message}`);
+      }
     }
 
-    try {
-      log.info(`开始分析股票 ${symbol.toUpperCase()}`);
-      const plan = await executeIntegratedAnalysisV2(symbol);
-      let fullExchangeName =
-        await marketQuery.getFullExchangeNameFromQuote(symbol);
-      fullExchangeName = fullExchangeName.toLowerCase().includes('nasdaq')
-        ? 'NASDAQ'
-        : fullExchangeName;
-
-      const stockCode = `${fullExchangeName}:${symbol}`;
-      console.log(
-        `console获取股票代码 ${stockCode}, ${JSON.stringify(timeFrameConfigs)}`
-      );
-
-      // const chartImages = await fetchChartData(stockCode, timeFrameConfigs);
-      // console.log('chartImages', chartImages);
-
-      // log.info('获取股票图表数据成');
-      // const chartImagesData = chartImages.map(image => {
-      //   return {
-      //     type: 'image' as const,
-      //     data: image.imageBase64,
-      //     mimeType: 'image/png',
-      //   };
-      // });
-
-      return {
-        content: [
-          {
-            type: 'text',
-            // text: buildMachineReadableSummary(plan),
-            text: formatTradePlanOutput(plan),
-          },
-          // ...chartImagesData,
-        ],
-      };
-    } catch (e) {
-      throw new UserError(`分析股票失败: ${e.message}`);
+    // 多个股票代码
+    if (Array.isArray(symbol)) {
+      if (
+        symbol.length === 0 ||
+        !symbol.every(s => /^[A-Za-z0-9.]{1,10}$/.test(s))
+      ) {
+        throw new UserError('请提供有效的股票代码数组，例如 ["AAPL", "MSFT"]');
+      }
+      try {
+        log.info(`开始批量分析股票: ${symbol.join(', ')}`);
+        const batchResult = await executeBatchAnalysis(symbol);
+        return Array.from(batchResult.results.values())
+          .map(item => buildMachineReadableSummary(item.tradePlan))
+          .join('\n\n');
+      } catch (e) {
+        throw new UserError(`批量分析股票失败: ${e.message}`);
+      }
     }
+
+    throw new UserError('symbol 参数格式错误');
   },
 });
 
