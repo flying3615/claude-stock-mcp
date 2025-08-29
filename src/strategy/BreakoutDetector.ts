@@ -189,7 +189,7 @@ export class BreakoutDetector
               type: isBearWick ? 'bear_wick' : 'support_break',
               price: parseFloat(current.close.toFixed(2)),
               strength: parseFloat(Math.min(100, volumeOsc[i]).toFixed(2)),
-              breakPriceLevel: parseFloat(currHighPivot.toFixed(2)),
+              breakPriceLevel: parseFloat(currLowPivot.toFixed(2)),
             });
           }
 

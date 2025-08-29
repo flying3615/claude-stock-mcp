@@ -48,7 +48,7 @@ export class StrategyAnalysisAgent {
           '1d'
         );
 
-        if (prices.length === 0) continue;
+        if (!prices || prices.length === 0) continue;
 
         // 2. 检测多空信号
         const checkResult = checkBullOrBearRecently(prices, 5);

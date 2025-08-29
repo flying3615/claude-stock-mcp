@@ -33,7 +33,7 @@ export class MarketQuery {
   topGainers: string[] = [];
   topTrending: string[] = [];
 
-  ALPHA_VANTAGE_URL_URL = 'https://www.alphavantage.co/query';
+  ALPHA_VANTAGE_URL = 'https://www.alphavantage.co/query';
 
   private _innerQuotesSummaries: QuoteSummary[] = [];
 
@@ -327,11 +327,11 @@ export class MarketQuery {
           });
       } else {
         console.log(`未找到 ${interval} 间隔的数据.`);
-        return null;
+        return [];
       }
     } catch (error) {
       console.error(`获取 ${interval} 数据时出错:`, error);
-      return null;
+      return [];
     }
   }
 

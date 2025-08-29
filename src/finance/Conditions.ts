@@ -184,8 +184,17 @@ export class Conditions {
             );
             return null;
           }
-          const sum = quotes.reduce((acc, quote) => acc + quote.adjclose, 0);
-          return sum / days;
+          const validPrices = quotes
+            .map(q => (typeof q.adjclose === 'number' ? q.adjclose : q.close))
+            .filter(v => typeof v === 'number' && !Number.isNaN(v));
+          if (validPrices.length === 0) {
+            console.log(
+              `Error: Not enough valid price points for ${days}-day moving average.`
+            );
+            return null;
+          }
+          const sum = validPrices.reduce((acc, p) => acc + p, 0);
+          return sum / validPrices.length;
         } else {
           console.log('Error: No data found or quotes is empty.');
         }
@@ -221,9 +230,16 @@ export class Conditions {
         quoteSummary.symbol,
         options.shouldHigherThanAveragePriceDays
       );
+      const validMAs = movingPriceAverages.filter(
+        ma => typeof ma.averagePrice === 'number' && !Number.isNaN(ma.averagePrice)
+      );
+      if (validMAs.length === 0) {
+        console.log(`No valid moving average values for ${quoteSummary.symbol}`);
+        return null;
+      }
       const averagePrice =
-        movingPriceAverages.reduce((acc, ma) => acc + ma.averagePrice, 0) /
-        movingPriceAverages.length;
+        validMAs.reduce((acc, ma) => acc + (ma.averagePrice as number), 0) /
+        validMAs.length;
 
       if (!this.isCloseHigherThan(quoteSummary, averagePrice)) {
         console.log(
@@ -234,10 +250,7 @@ export class Conditions {
 
       if (
         options.priceDeviationWithin &&
-        !this.checkDeviationsWithin(
-          movingPriceAverages,
-          options.priceDeviationWithin
-        )
+        !this.checkDeviationsWithin(validMAs, options.priceDeviationWithin)
       ) {
         console.log(
           `Price average deviation is too big for ${quoteSummary.symbol}`

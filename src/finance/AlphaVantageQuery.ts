@@ -3,7 +3,27 @@ import axios from 'axios';
 import { EconomicIndicator } from './MarketQuery.js';
 
 export class AlphaVantageQuery {
-  ALPHA_VANTAGE_URL_URL = 'https://www.alphavantage.co/query';
+  ALPHA_VANTAGE_URL = 'https://www.alphavantage.co/query';
+
+  private async sleep(ms: number) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  private async getWithRetry(url: string, attempts = 3, timeoutMs = 10000) {
+    let lastErr: any;
+    for (let i = 0; i < attempts; i++) {
+      try {
+        const res = await axios.get(url, { timeout: timeoutMs });
+        return res.data;
+      } catch (err) {
+        lastErr = err;
+        // exponential backoff: 500ms, 1000ms, 2000ms
+        const delay = 500 * Math.pow(2, i);
+        await this.sleep(delay);
+      }
+    }
+    throw lastErr;
+  }
 
   // 8. 获取经济指标
   async getEconomicIndicators(
@@ -11,76 +31,88 @@ export class AlphaVantageQuery {
     ecIndicators: EconomicIndicator[]
   ): Promise<any | null> {
     try {
-      const result = {};
+      const result: Record<string, unknown> = {};
+      const tasks: Promise<void>[] = [];
+
       if (ecIndicators.includes(EconomicIndicator.GDP)) {
-        // 获取GDP增长率
-        const gdpUrl = `${this.ALPHA_VANTAGE_URL_URL}?function=REAL_GDP&interval=quarterly&apikey=${apiKey}`;
-        const gdpResponse = await axios.get(gdpUrl);
-        // 处理并过滤GDP数据，只保留最近4个季度
-        const gdpData = gdpResponse.data;
-        if (gdpData && gdpData.data) {
-          gdpData.data = gdpData.data.slice(0, 4);
-        }
-        result['gdpData'] = gdpData;
-      } else if (ecIndicators.includes(EconomicIndicator.Inflation)) {
-        // 获取通货膨胀率
-        const inflationUrl = `${this.ALPHA_VANTAGE_URL_URL}?function=INFLATION&apikey=${apiKey}`;
-        const inflationResponse = await axios.get(inflationUrl);
-
-        // 处理并过滤通货膨胀率数据，只保留最近4个数据点
-        const inflationData = inflationResponse.data;
-        if (inflationData && inflationData.data) {
-          inflationData.data = inflationData.data.slice(0, 4);
-        }
-
-        result['inflationData'] = inflationData;
-      } else if (ecIndicators.includes(EconomicIndicator.Unemployment)) {
-        // 获取失业率
-        const unemploymentUrl = `${this.ALPHA_VANTAGE_URL_URL}?function=UNEMPLOYMENT&apikey=${apiKey}`;
-        const unemploymentResponse = await axios.get(unemploymentUrl);
-
-        // 处理并过滤失业率数据，只保留最近4个数据点
-        const unemploymentData = unemploymentResponse.data;
-        if (unemploymentData && unemploymentData.data) {
-          unemploymentData.data = unemploymentData.data.slice(0, 4);
-        }
-        result['unemploymentData'] = unemploymentData;
-      } else if (ecIndicators.includes(EconomicIndicator.FedFundsRate)) {
-        // 获取联邦基金利率
-        const fedFundsRateUrl = `${this.ALPHA_VANTAGE_URL_URL}?function=FEDERAL_FUNDS_RATE&apikey=${apiKey}`;
-        const fedFundsRateResponse = await axios.get(fedFundsRateUrl);
-
-        // 处理并过滤联邦基金利率数据，只保留最近6个数据点
-        const fedFundsRateData = fedFundsRateResponse.data;
-        if (fedFundsRateData && fedFundsRateData.data) {
-          fedFundsRateData.data = fedFundsRateData.data.slice(0, 6);
-        }
-
-        result['fedFundsRateData'] = fedFundsRateData;
-      } else if (ecIndicators.includes(EconomicIndicator.CPI)) {
-        // 获取CPI
-        const cpiUrl = `${this.ALPHA_VANTAGE_URL_URL}?function=CPI&apikey=${apiKey}`;
-        const cpiResponse = await axios.get(cpiUrl);
-
-        // 处理并过滤CPI数据，只保留最近6个数据点
-        const cpiData = cpiResponse.data;
-        if (cpiData && cpiData.data) {
-          cpiData.data = cpiData.data.slice(0, 6);
-        }
-        result['cpiData'] = cpiData;
-      } else if (ecIndicators.includes(EconomicIndicator.RetailSales)) {
-        // 获取零售销售数据
-        const retailSalesUrl = `${this.ALPHA_VANTAGE_URL_URL}?function=RETAIL_SALES&apikey=${apiKey}`;
-        const retailSalesResponse = await axios.get(retailSalesUrl);
-
-        // 处理并过滤零售销售数据，只保留最近6个数据点
-        const retailSalesData = retailSalesResponse.data;
-        if (retailSalesData && retailSalesData.data) {
-          retailSalesData.data = retailSalesData.data.slice(0, 6);
-        }
-        result['retailSalesData'] = retailSalesData;
+        const gdpUrl = `${this.ALPHA_VANTAGE_URL}?function=REAL_GDP&interval=quarterly&apikey=${apiKey}`;
+        tasks.push(
+          (async () => {
+            const gdpData = await this.getWithRetry(gdpUrl);
+            if (gdpData && (gdpData as any).data) {
+              (gdpData as any).data = (gdpData as any).data.slice(0, 4);
+            }
+            (result as any)['gdpData'] = gdpData;
+          })()
+        );
       }
 
+      if (ecIndicators.includes(EconomicIndicator.Inflation)) {
+        const inflationUrl = `${this.ALPHA_VANTAGE_URL}?function=INFLATION&apikey=${apiKey}`;
+        tasks.push(
+          (async () => {
+            const inflationData = await this.getWithRetry(inflationUrl);
+            if (inflationData && (inflationData as any).data) {
+              (inflationData as any).data = (inflationData as any).data.slice(0, 4);
+            }
+            (result as any)['inflationData'] = inflationData;
+          })()
+        );
+      }
+
+      if (ecIndicators.includes(EconomicIndicator.Unemployment)) {
+        const unemploymentUrl = `${this.ALPHA_VANTAGE_URL}?function=UNEMPLOYMENT&apikey=${apiKey}`;
+        tasks.push(
+          (async () => {
+            const unemploymentData = await this.getWithRetry(unemploymentUrl);
+            if (unemploymentData && (unemploymentData as any).data) {
+              (unemploymentData as any).data = (unemploymentData as any).data.slice(0, 4);
+            }
+            (result as any)['unemploymentData'] = unemploymentData;
+          })()
+        );
+      }
+
+      if (ecIndicators.includes(EconomicIndicator.FedFundsRate)) {
+        const fedFundsRateUrl = `${this.ALPHA_VANTAGE_URL}?function=FEDERAL_FUNDS_RATE&apikey=${apiKey}`;
+        tasks.push(
+          (async () => {
+            const fedFundsRateData = await this.getWithRetry(fedFundsRateUrl);
+            if (fedFundsRateData && (fedFundsRateData as any).data) {
+              (fedFundsRateData as any).data = (fedFundsRateData as any).data.slice(0, 6);
+            }
+            (result as any)['fedFundsRateData'] = fedFundsRateData;
+          })()
+        );
+      }
+
+      if (ecIndicators.includes(EconomicIndicator.CPI)) {
+        const cpiUrl = `${this.ALPHA_VANTAGE_URL}?function=CPI&apikey=${apiKey}`;
+        tasks.push(
+          (async () => {
+            const cpiData = await this.getWithRetry(cpiUrl);
+            if (cpiData && (cpiData as any).data) {
+              (cpiData as any).data = (cpiData as any).data.slice(0, 6);
+            }
+            (result as any)['cpiData'] = cpiData;
+          })()
+        );
+      }
+
+      if (ecIndicators.includes(EconomicIndicator.RetailSales)) {
+        const retailSalesUrl = `${this.ALPHA_VANTAGE_URL}?function=RETAIL_SALES&apikey=${apiKey}`;
+        tasks.push(
+          (async () => {
+            const retailSalesData = await this.getWithRetry(retailSalesUrl);
+            if (retailSalesData && (retailSalesData as any).data) {
+              (retailSalesData as any).data = (retailSalesData as any).data.slice(0, 6);
+            }
+            (result as any)['retailSalesData'] = retailSalesData;
+          })()
+        );
+      }
+
+      await Promise.all(tasks);
       return result;
     } catch (error) {
       console.error(`获取经济指标数据时出错: ${error}`);
@@ -93,40 +125,42 @@ export class AlphaVantageQuery {
     const metrics = args.metrics || ['overview'];
     const results: Record<string, unknown> = {};
 
-    const url = new URL(`${this.ALPHA_VANTAGE_URL_URL}`);
-    url.searchParams.append('apikey', apiKey);
-    url.searchParams.append('symbol', args.symbol!);
+    try {
+      for (const metric of metrics) {
+        let fnParam: string | null = null;
+        switch (metric) {
+          case 'overview':
+            fnParam = 'OVERVIEW';
+            break;
+          case 'income':
+            fnParam = 'INCOME_STATEMENT';
+            break;
+          case 'balance':
+            fnParam = 'BALANCE_SHEET';
+            break;
+          case 'cash':
+            fnParam = 'CASH_FLOW';
+            break;
+          case 'earnings':
+            fnParam = 'EARNINGS';
+            break;
+          default:
+            fnParam = null;
+        }
 
-    for (const metric of metrics) {
-      switch (metric) {
-        case 'overview':
-          url.searchParams.append('function', 'OVERVIEW');
-          break;
-        case 'income':
-          url.searchParams.append('function', 'INCOME_STATEMENT');
-          break;
-        case 'balance':
-          url.searchParams.append('function', 'BALANCE_SHEET');
-          break;
-        case 'cash':
-          url.searchParams.append('function', 'CASH_FLOW');
-          break;
-        case 'earnings':
-          url.searchParams.append('function', 'EARNINGS');
-          break;
-        default:
-          continue;
+        if (!fnParam) continue;
+
+        const url = `${this.ALPHA_VANTAGE_URL}?function=${fnParam}&symbol=${encodeURIComponent(args.symbol!)}&apikey=${apiKey}`;
+        const data = await this.getWithRetry(url, 3, 10000);
+        results[metric] = data;
       }
 
-      const response = await fetch(url.toString());
-
-      if (!response.ok) {
-        throw new Error(`FMP API error for ${metric}: ${response.statusText}`);
-      }
-
-      results[metric] = await response.json();
+      return results;
+    } catch (error) {
+      // 正确的错误来源命名（非 FMP）
+      throw new Error(
+        `Alpha Vantage API error for company fundamentals: ${error instanceof Error ? error.message : String(error)}`
+      );
     }
-
-    return results;
   }
 }

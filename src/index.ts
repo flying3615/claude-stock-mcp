@@ -23,7 +23,28 @@ import { AlphaVantageQuery } from './finance/AlphaVantageQuery.js';
 
 // 初始化日志记录器，重定向控制台输出到文件
 // 设置为true表示完全静默模式，不会有任何控制台输出，避免干扰Claude Desktop
-Logger.init(true);
+const silentLog = process.env.LOG_SILENT ? process.env.LOG_SILENT === 'true' : true;
+Logger.init(silentLog);
+
+// 可选的环境变量预检查（仅警告）
+function validateEnvOptional() {
+  if (!process.env.ALPHA_VANTAGE_API_KEY) {
+    console.warn('ALPHA_VANTAGE_API_KEY 未配置，将无法使用相关工具');
+  }
+  if (!process.env.FMP_API_KEY) {
+    console.warn('FMP_API_KEY 未配置，将无法使用相关工具');
+  }
+}
+validateEnvOptional();
+
+// 环境变量校验工具
+function requireEnv(name: string): string {
+  const v = process.env[name];
+  if (!v) {
+    throw new UserError(`缺少环境变量 ${name}，请配置该环境变量`);
+  }
+  return v;
+}
 
 // 任务状态枚举
 
@@ -52,7 +73,7 @@ server.addTool({
   }),
   execute: async (args, { log }) => {
     const { symbol, metrics } = args;
-    const apiKey = process.env.ALPHA_VANTAGE_API_KEY!;
+    const apiKey = requireEnv('ALPHA_VANTAGE_API_KEY');
 
     // 验证股票代码
     if (!symbol || !/^[A-Za-z0-9.]{1,10}$/.test(symbol)) {
@@ -80,6 +101,7 @@ server.addTool({
   execute: async args => {
     try {
       const { topNumber } = args;
+      requireEnv('FMP_API_KEY');
 
       const result = {};
       result['fearGreedIndex'] = await marketQuery.getFearGreedIndex();
@@ -145,7 +167,7 @@ server.addTool({
   }),
   execute: async args => {
     try {
-      const apiKey = process.env.ALPHA_VANTAGE_API_KEY!;
+      const apiKey = requireEnv('ALPHA_VANTAGE_API_KEY');
       const { types } = args;
 
       const result = await avQuery.getEconomicIndicators(apiKey, types);
