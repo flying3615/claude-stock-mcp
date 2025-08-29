@@ -1,6 +1,6 @@
 {
   "name": "@gabriel3615/claude-stock-analysis-mcp",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Claude MCP服务器，提供股票分析功能",
   "type": "module",
   "main": "dist/index.js",
