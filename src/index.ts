@@ -15,7 +15,6 @@ import {
   buildMachineReadableSummary,
   executeBatchAnalysis,
   executeIntegratedAnalysisV2,
-  executeIntegratedCryptoAnalysisV2,
   formatTradePlanOutput,
 } from '@gabriel3615/ta_analysis';
 import { EconomicIndicator, MarketQuery } from './finance/MarketQuery.js';
@@ -34,9 +33,6 @@ function validateEnvOptional() {
   }
   if (!process.env.FMP_API_KEY) {
     console.warn('FMP_API_KEY 未配置，将无法使用相关工具');
-  }
-  if (!process.env.TM_API_KEY) {
-    console.warn('TM_API_KEY 未配置，将无法使用加密货币分析工具');
   }
 }
 validateEnvOptional();
@@ -234,28 +230,7 @@ server.addTool({
 });
 
 // <======执行加密货币分析报告=====>
-server.addTool({
-  name: 'execute-crypto-analysis',
-  description: '分析指定加密货币交易对走势（仅支持单个交易对，例如 BTC-USD）',
-  parameters: z.object({
-    symbol: z.string().describe('加密货币交易对，例如 BTC-USD'),
-  }),
-  execute: async (args, { log }) => {
-    const { symbol } = args;
-    const tmApiKey = requireEnv('TM_API_KEY');
-
-    if (!symbol || !/^[A-Za-z0-9-]{1,20}$/.test(symbol)) {
-      throw new UserError('请提供有效的加密货币交易对，例如 BTC-USD');
-    }
-    try {
-      log.info(`开始分析加密货币 ${symbol.toUpperCase()}`);
-      const plan = await executeIntegratedCryptoAnalysisV2(symbol, tmApiKey);
-      return formatTradePlanOutput(plan);
-    } catch (e) {
-      throw new UserError(`分析加密货币失败: ${e.message}`);
-    }
-  },
-});
+// 已移除加密货币分析工具
 
 // <======启动异步任务工具=====>
 server.addTool({

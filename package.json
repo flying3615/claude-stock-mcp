@@ -1,6 +1,6 @@
 {
   "name": "@gabriel3615/claude-stock-analysis-mcp",
-  "version": "1.5.0",
+  "version": "1.4.1",
   "description": "Claude MCP服务器，提供股票分析功能",
   "type": "module",
   "main": "dist/index.js",
@@ -40,7 +40,7 @@
     "node-fetch": "^3.3.2",
     "playwright": "^1.54.1",
     "technicalindicators": "^3.1.0",
-    "tmai-api": "^3.2.0",
+    
     "typescript-eslint": "^8.26.0",
     "uuid": "^9.0.1",
     "yahoo-finance2": "^2.9.1",
