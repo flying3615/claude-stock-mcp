@@ -2,6 +2,7 @@ import yahooFinance from 'yahoo-finance2';
 
 import _ from 'lodash';
 import axios from 'axios';
+import { TokenMetricsClient } from 'tmai-api';
 
 import { marketQueryConfig, weight } from '../config.js';
 import { Conditions } from './Conditions.js';
@@ -32,6 +33,17 @@ export enum EconomicIndicator {
 export class MarketQuery {
   topGainers: string[] = [];
   topTrending: string[] = [];
+  private tmClient?: TokenMetricsClient;
+
+  private getTokenMetricsClient(): TokenMetricsClient {
+    if (this.tmClient) return this.tmClient;
+    const apiKey = process.env.TOKEN_METRICS_API_KEY;
+    if (!apiKey) {
+      throw new Error('TOKEN_METRICS_API_KEY 未配置');
+    }
+    this.tmClient = new TokenMetricsClient(apiKey);
+    return this.tmClient;
+  }
 
   ALPHA_VANTAGE_URL = 'https://www.alphavantage.co/query';
 
@@ -477,37 +489,151 @@ export class MarketQuery {
 
   // 6. 获取加密货币市场数据
   async getCryptoData(): Promise<any | null> {
-    try {
-      const cryptos = [
-        { symbol: 'BTC-USD', name: 'Bitcoin' },
-        { symbol: 'ETH-USD', name: 'Ethereum' },
-        { symbol: 'SOL-USD', name: 'Solana' },
-        { symbol: 'XRP-USD', name: 'Ripple' },
-        { symbol: 'ADA-USD', name: 'Cardano' },
-        { symbol: 'DOGE-USD', name: 'Dogecoin' },
-      ];
+    const fallbackYahoo = async () => {
+      try {
+        const cryptos = [
+          { symbol: 'BTC-USD', name: 'Bitcoin' },
+          { symbol: 'ETH-USD', name: 'Ethereum' },
+          { symbol: 'SOL-USD', name: 'Solana' },
+          { symbol: 'XRP-USD', name: 'Ripple' },
+          { symbol: 'ADA-USD', name: 'Cardano' },
+          { symbol: 'DOGE-USD', name: 'Dogecoin' },
+        ];
 
-      const result: any[] = [];
-
-      for (const crypto of cryptos) {
-        const quote = await yahooFinance.quote(crypto.symbol);
-
-        if (quote) {
-          result.push({
-            symbol: quote.symbol,
-            name: crypto.name,
-            price: quote.regularMarketPrice,
-            change: quote.regularMarketChange,
-            changePercent: quote.regularMarketChangePercent,
-            timestamp: quote.regularMarketTime,
-          });
+        const result: any[] = [];
+        for (const crypto of cryptos) {
+          const quote = await yahooFinance.quote(crypto.symbol);
+          if (quote) {
+            result.push({
+              symbol: quote.symbol,
+              name: crypto.name,
+              price: quote.regularMarketPrice,
+              change: quote.regularMarketChange,
+              changePercent: quote.regularMarketChangePercent,
+              timestamp: quote.regularMarketTime,
+            });
+          }
         }
+        return result;
+      } catch (error) {
+        console.error(`获取加密货币数据(Yahoo)时出错: ${error}`);
+        return null;
+      }
+    };
+
+    // 若未配置 Token Metrics 则回退到 Yahoo
+    if (!process.env.TOKEN_METRICS_API_KEY) {
+      return await fallbackYahoo();
+    }
+
+    try {
+      // 使用 Token Metrics API 优先获取价格
+      const client = this.getTokenMetricsClient();
+
+      // 默认的代币集合（与 Yahoo 对齐）
+      const symbols = ['BTC', 'ETH', 'SOL', 'XRP', 'ADA', 'DOGE'];
+      const nameMap: Record<string, string> = {
+        BTC: 'Bitcoin',
+        ETH: 'Ethereum',
+        SOL: 'Solana',
+        XRP: 'Ripple',
+        ADA: 'Cardano',
+        DOGE: 'Dogecoin',
+      };
+
+      // 取最近两天用于计算涨跌
+      const end = new Date();
+      const start = new Date();
+      start.setDate(end.getDate() - 2);
+      const endDate = end.toISOString().slice(0, 10);
+      const startDate = start.toISOString().slice(0, 10);
+
+      // Token Metrics JS SDK: client.price.get({ symbol, startDate, endDate })
+      const resp: any = await (client as any).price.get({
+        symbol: symbols.join(','),
+        startDate,
+        endDate,
+      });
+
+      // 兼容不同返回结构
+      const rows: any[] = (resp?.data ?? resp) as any[];
+
+      // 聚合每个 symbol 的最新价与上一价
+      type Row = { symbol: string; date: string | Date; price: number };
+      const parsed: Row[] = (rows || []).map((r: any) => {
+        const sym =
+          r.TOKEN_SYMBOL || r.SYMBOL || r.symbol || r.base_symbol || r.asset;
+        const dt = r.DATE || r.date || r.timestamp;
+        const price =
+          r.PRICE ??
+          r.price ??
+          r.CLOSE ??
+          r.close ??
+          r.VALUE ??
+          r.value ??
+          r.last;
+        return {
+          symbol: String(sym).toUpperCase(),
+          date: typeof dt === 'string' ? dt : new Date(dt).toISOString(),
+          price: typeof price === 'number' ? price : Number(price),
+        };
+      }).filter(r => symbols.includes(r.symbol) && Number.isFinite(r.price));
+
+      const latest: Record<string, Row> = {};
+      const previous: Record<string, Row> = {};
+
+      for (const row of parsed) {
+        const key = row.symbol;
+        if (!latest[key] || new Date(row.date) > new Date(latest[key].date)) {
+          // 将旧的 latest 作为 previous 保存，用于涨跌
+          if (latest[key]) {
+            const prev = previous[key];
+            // 选择较新的作为 previous
+            if (!prev || new Date(latest[key].date) > new Date(prev.date)) {
+              previous[key] = latest[key];
+            }
+          }
+          latest[key] = row;
+        } else {
+          // 作为 previous 的候选
+          const prev = previous[key];
+          if (!prev || new Date(row.date) > new Date(prev.date)) {
+            previous[key] = row;
+          }
+        }
+      }
+
+      const result: any[] = symbols.map(sym => {
+        const last = latest[sym];
+        const prev = previous[sym];
+        if (!last) return null;
+        const price = last.price;
+        let change = 0;
+        let changePercent = 0;
+        if (prev && Number.isFinite(prev.price) && prev.price !== 0) {
+          change = price - prev.price;
+          changePercent = (change / prev.price) * 100;
+        }
+        return {
+          symbol: `${sym}-USD`,
+          name: nameMap[sym] || sym,
+          price,
+          change,
+          changePercent,
+          timestamp: new Date(last.date),
+        };
+      }).filter(Boolean);
+
+      // 若结果为空则回退
+      if (!result || result.length === 0) {
+        return await fallbackYahoo();
       }
 
       return result;
     } catch (error) {
-      console.error(`获取加密货币数据时出错: ${error}`);
-      return null;
+      console.error(`获取加密货币数据(Token Metrics)时出错: ${error}`);
+      // 出错回退到 Yahoo
+      return await fallbackYahoo();
     }
   }
 
