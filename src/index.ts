@@ -230,7 +230,28 @@ server.addTool({
 });
 
 // <======执行加密货币分析报告=====>
-// 已移除加密货币分析工具
+server.addTool({
+  name: 'execute-crypto-analysis',
+  description: '分析指定加密货币交易对走势（仅支持单个交易对，例如 BTC-USD）',
+  parameters: z.object({
+    symbol: z.string().describe('加密货币交易对，例如 BTC-USD'),
+  }),
+  execute: async (args, { log }) => {
+    const { symbol } = args;
+
+    if (!symbol || !/^[A-Za-z0-9-]{1,20}$/.test(symbol)) {
+      throw new UserError('请提供有效的加密货币交易对，例如 BTC-USD');
+    }
+    try {
+      log.info(`开始分析加密货币 ${symbol.toUpperCase()}`);
+      const mod: any = await import('@gabriel3615/ta_analysis');
+      const plan = await mod.executeIntegratedCryptoAnalysisV2(symbol);
+      return formatTradePlanOutput(plan);
+    } catch (e) {
+      throw new UserError(`分析加密货币失败: ${e.message}`);
+    }
+  },
+});
 
 // <======启动异步任务工具=====>
 server.addTool({
