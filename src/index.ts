@@ -34,9 +34,6 @@ function validateEnvOptional() {
   if (!process.env.FMP_API_KEY) {
     console.warn('FMP_API_KEY 未配置，将无法使用相关工具');
   }
-  if (!process.env.TM_API_KEY) {
-    console.warn('TM_API_KEY 未配置，将无法使用加密货币分析工具');
-  }
 }
 validateEnvOptional();
 
@@ -241,16 +238,14 @@ server.addTool({
   }),
   execute: async (args, { log }) => {
     const { symbol } = args;
-    const tmApiKey = requireEnv('TM_API_KEY');
 
     if (!symbol || !/^[A-Za-z0-9-]{1,20}$/.test(symbol)) {
       throw new UserError('请提供有效的加密货币交易对，例如 BTC-USD');
     }
     try {
       log.info(`开始分析加密货币 ${symbol.toUpperCase()}`);
-      // 动态导入以兼容可能的类型变化
-      const { executeIntegratedCryptoAnalysisV2 } = await import('@gabriel3615/ta_analysis');
-      const plan = await executeIntegratedCryptoAnalysisV2(symbol, tmApiKey);
+      const mod: any = await import('@gabriel3615/ta_analysis');
+      const plan = await mod.executeIntegratedCryptoAnalysisV2(symbol);
       return formatTradePlanOutput(plan);
     } catch (e) {
       throw new UserError(`分析加密货币失败: ${e.message}`);
