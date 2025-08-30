@@ -46,7 +46,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/lodash": "^4.17.16",
+    "@types/lodash": "^4.17.20",
     "rimraf": "^6.0.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
