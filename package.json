@@ -32,7 +32,7 @@
     "@gabriel3615/ta_analysis": "^3.0.0",
     "axios": "^1.11.0",
     "cheerio": "^1.1.2",
-    "eslint-config-prettier": "^10.0.2",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.2.3",
     "fastmcp": "^3.8.0",
     "globals": "^16.0.0",
