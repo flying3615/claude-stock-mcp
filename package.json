@@ -29,7 +29,7 @@
   ],
   "dependencies": {
     "@eslint/js": "^9.21.0",
-    "@gabriel3615/ta_analysis": "^2.5.2",
+    "@gabriel3615/ta_analysis": "^3.0.0",
     "axios": "^1.11.0",
     "cheerio": "^1.1.2",
     "eslint-config-prettier": "^10.0.2",
