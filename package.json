@@ -28,7 +28,7 @@
     "trading"
   ],
   "dependencies": {
-    "@eslint/js": "^9.21.0",
+    "@eslint/js": "^9.34.0",
     "@gabriel3615/ta_analysis": "^3.0.0",
     "axios": "^1.11.0",
     "cheerio": "^1.1.2",
