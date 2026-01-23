@@ -1,5 +1,5 @@
 import { ConditionOptions, QuoteSummary } from '../types.js';
-import yahooFinance from 'yahoo-finance2';
+import yahooFinance from './yahooFinanceInstance.js';
 import _ from 'lodash';
 import { BreakoutDetector } from '../strategy/BreakoutDetector.js';
 
@@ -51,10 +51,10 @@ export class Conditions {
       return false;
     return (
       1 -
-        (quoteSummary.price.regularMarketPrice -
-          quoteSummary.price.regularMarketOpen) /
-          (quoteSummary.price.regularMarketDayHigh -
-            quoteSummary.price.regularMarketOpen) <
+      (quoteSummary.price.regularMarketPrice -
+        quoteSummary.price.regularMarketOpen) /
+      (quoteSummary.price.regularMarketDayHigh -
+        quoteSummary.price.regularMarketOpen) <
       thresholdPercentage
     );
   }
@@ -73,8 +73,8 @@ export class Conditions {
     return (
       quoteSummary.price.regularMarketPrice > targetPrice ||
       Math.abs(quoteSummary.price.regularMarketPrice - targetPrice) /
-        targetPrice <
-        thresholdPercentage
+      targetPrice <
+      thresholdPercentage
     );
   }
 
@@ -134,7 +134,7 @@ export class Conditions {
   isBullish(quoteSummary: QuoteSummary): boolean {
     return (
       quoteSummary.price.fiftyDayAverage >
-        quoteSummary.price.twoHundredDayAverage &&
+      quoteSummary.price.twoHundredDayAverage &&
       quoteSummary.price.regularMarketPrice > quoteSummary.price.fiftyDayAverage
     );
   }
@@ -339,7 +339,7 @@ export class Conditions {
 
       const latestBreakSignal =
         supportResistanceResult.breakSignals[
-          supportResistanceResult.breakSignals.length - 1
+        supportResistanceResult.breakSignals.length - 1
         ];
 
       if (latestBreakSignal.type !== 'resistance_break') {

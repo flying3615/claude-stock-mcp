@@ -1,4 +1,4 @@
-import yahooFinance from 'yahoo-finance2';
+import yahooFinance from './yahooFinanceInstance.js';
 
 import _ from 'lodash';
 import axios from 'axios';
@@ -15,10 +15,7 @@ import {
   QuoteSummary,
 } from '../types.js';
 
-yahooFinance.setGlobalConfig({
-  validation: { _internalThrowOnAdditionalProperties: false, logErrors: false },
-});
-yahooFinance.suppressNotices(['yahooSurvey']);
+
 
 export enum EconomicIndicator {
   GDP = 'GDP',
@@ -42,7 +39,7 @@ export class MarketQuery {
    * @param options
    */
   async getTrendingStocks(options = marketQueryConfig) {
-    const symbols = await yahooFinance.trendingSymbols('US', options);
+    const symbols = await yahooFinance.trendingSymbols(options.region || 'US', options);
     const quotesSummaries: QuoteSummary[] = [];
     for (const quote of symbols.quotes) {
       // ignore BTC and ETH
@@ -75,9 +72,9 @@ export class MarketQuery {
     } as any;
 
     try {
-      const result = await yahooFinance.screener(queryOptions, {
+      const result = (await yahooFinance.screener(queryOptions, undefined, {
         validateResult: false,
-      });
+      })) as any;
       if (result && result.quotes && result.quotes.length > 0) {
         const symbols = result.quotes.map(quote => quote.symbol);
         console.log(`Top ${queryOptions.count} ${scrIds} today:`, symbols);
@@ -159,9 +156,13 @@ export class MarketQuery {
   async getDailyGainers(options = marketQueryConfig) {
     let gainers;
     try {
-      gainers = await yahooFinance.dailyGainers(options);
+      gainers = await yahooFinance.screener({
+        scrIds: 'day_gainers',
+        ...options,
+      });
     } catch (error) {
-      gainers = error.result;
+      gainers = { quotes: [] };
+      console.error('Error fetching daily gainers:', error);
     }
 
     const quotesSummaries: QuoteSummary[] = [];

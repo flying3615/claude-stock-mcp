@@ -1,10 +1,4 @@
-import yahooFinance from 'yahoo-finance2';
 import { QuoteSummary, Weight } from '../types.js';
-
-yahooFinance.setGlobalConfig({
-  validation: { _internalThrowOnAdditionalProperties: false, logErrors: false },
-});
-yahooFinance.suppressNotices(['yahooSurvey']);
 
 interface EvaluatorObject {
   symbol: string;
@@ -75,12 +69,12 @@ export class Evaluator {
           (
             normalizedPrice[i].price * weights.regularMarketPrice +
             normalizedChangePercent[i].changePercent *
-              weights.regularMarketChangePercent +
+            weights.regularMarketChangePercent +
             normalizedVolume[i].volumeRatio * weights.volumeRatio +
             normalizedSharesOutstanding[i].sharesOutstanding *
-              weights.sharesOutstanding +
+            weights.sharesOutstanding +
             normalizedBreakoutStrength[i].breakoutStrength *
-              weights.breakoutStrength
+            weights.breakoutStrength
           ).toFixed(4)
         );
 
